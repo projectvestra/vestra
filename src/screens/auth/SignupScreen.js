@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -8,6 +9,7 @@ import {
 } from 'react-native';
 
 export default function SignupScreen() {
+  const router = useRouter();
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Create Account</Text>
@@ -36,7 +38,9 @@ export default function SignupScreen() {
         <Text style={styles.primaryButtonText}>Sign Up</Text>
       </TouchableOpacity>
 
-      <Text style={styles.footerText}>
+      <Text style={styles.footerText}
+        onPress={() => router.push('/auth/login')}
+        >
         Already have an account? Login
       </Text>
     </View>
