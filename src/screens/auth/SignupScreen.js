@@ -34,7 +34,9 @@ export default function SignupScreen() {
         style={styles.input}
       />
 
-      <TouchableOpacity style={styles.primaryButton}>
+      <TouchableOpacity style={styles.primaryButton}
+      onPress={() => router.push('/onboarding/step1')}
+      >
         <Text style={styles.primaryButtonText}>Sign Up</Text>
       </TouchableOpacity>
 
