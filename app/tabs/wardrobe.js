@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 
 import { getWardrobeItems } from '../../src/services/wardrobeService';
-import WardrobeItemCard from '../../src/components/wardrobeItemCard';
+import WardrobeItemCard from '../../src/components/WardrobeItemCard';
 
 const CATEGORIES = ['shirts', 'pants', 'shoes', 'accessories'];
 
