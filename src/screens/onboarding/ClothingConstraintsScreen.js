@@ -1,5 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { completeOnboarding } from '../../services/appStateService';
+
 
 export default function ClothingConstraintsScreen() {
   const router = useRouter();
@@ -25,7 +27,10 @@ export default function ClothingConstraintsScreen() {
       {/* Finish */}
       <TouchableOpacity 
       style={styles.finishButton} 
-      onPress={() => router.replace('/tabs/home')}
+      onPress ={() => {
+        completeOnboarding();
+        router.replace('/tabs/home');
+      }}
       >
         <Text style={styles.finishButtonText}>Finish</Text>
       </TouchableOpacity>
