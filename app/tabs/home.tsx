@@ -2,6 +2,8 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { getTodayOutfit, getWeeklyPlan } from '../../src/services/homeService';
 import TodayOutfitCard from '../../src/components/TodayOutfitCard';
 import ActionCard from '../../src/components/ActionCard';
+import SectionHeader from '../../src/components/SectionHeader';
+
 
 export default function Home() {
   const todayOutfit = getTodayOutfit();
@@ -13,12 +15,14 @@ export default function Home() {
       <View style={styles.mannequinPlaceholder} />
 
       {/* Today’s Outfit */}
-      <TodayOutfitCard outfit={todayOutfit} />
+      <SectionHeader title="Today’s Look" />
+<TodayOutfitCard outfit={todayOutfit} />
 
-      {/* Actions */}
-      <ActionCard title="Today’s Outfit" />
-      <ActionCard title="Outfit Planner" />
-      <ActionCard title="Weekly Planner" />
+<SectionHeader title="Quick Actions" />
+<ActionCard title="Today’s Outfit" />
+<ActionCard title="Outfit Planner" />
+<ActionCard title="Weekly Planner" />
+
     </ScrollView>
   );
 }
