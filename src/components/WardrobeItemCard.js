@@ -3,7 +3,14 @@ import { View, Text, StyleSheet } from 'react-native';
 export default function WardrobeItemCard({ item }) {
   return (
     <View style={styles.card}>
-      <Text style={styles.text}>{item.name}</Text>
+      <View
+        style={[
+          styles.imagePlaceholder,
+          { backgroundColor: item.color || '#eee' },
+        ]}
+      />
+      <Text style={styles.name}>{item.name}</Text>
+      <Text style={styles.category}>{item.category}</Text>
     </View>
   );
 }
@@ -11,15 +18,24 @@ export default function WardrobeItemCard({ item }) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    padding: 16,
-    margin: 6,
+    margin: 8,
     borderRadius: 12,
-    backgroundColor: '#f4f4f4',
-    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    padding: 12,
   },
-  text: {
+  imagePlaceholder: {
+    height: 80,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  name: {
     fontSize: 14,
-    color: '#111',
     fontWeight: '500',
+    color: '#111',
+  },
+  category: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
   },
 });
