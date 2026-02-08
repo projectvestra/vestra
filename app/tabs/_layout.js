@@ -1,13 +1,27 @@
-import { Tabs } from 'expo-router';
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
-function WardrobeButton(props) {
-  return (
-    <TouchableOpacity
-      onPress={props.onPress}
-      style={styles.wrapper}
-      accessibilityRole="button"
-    >
-      <View style={styles.button} />
+
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import { TouchableOpacity, View, Text,StyleSheet } from 'react-native';
+function WardrobeButton() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const isOnWardrobe = pathname === '/tabs/wardrobe';
+
+  const handlePress = () => {
+    if (isOnWardrobe) {
+      // Add-item flow will be wired later
+      console.log('Open add item options');
+    } else {
+      router.push('/tabs/wardrobe');
+    }
+  };
+   return (
+    <TouchableOpacity onPress={handlePress} style={styles.wrapper}>
+      <View style={styles.button}>
+        <Text style={styles.icon}>
+          {isOnWardrobe ? '+' : '👕'}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -32,14 +46,21 @@ export default function TabsLayout() {
 }
 const styles = StyleSheet.create({
   wrapper: {
-    top: -20,
+    top: -22,
     justifyContent: 'center',
     alignItems: 'center',
   },
   button: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
