@@ -1,6 +1,9 @@
-// Mock wardrobe service — backend-ready shape
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-let wardrobeItems = [
+const STORAGE_KEY = 'WARDROBE_ITEMS';
+
+// Default seed data (only used first time)
+const defaultItems = [
   {
     id: '1',
     name: 'White Shirt',
@@ -10,13 +13,6 @@ let wardrobeItems = [
   },
   {
     id: '2',
-    name: 'Blue Shirt',
-    category: 'Shirts',
-    color: '#4a6cf7',
-    image: null,
-  },
-  {
-    id: '3',
     name: 'Black Jeans',
     category: 'Pants',
     color: '#111111',
@@ -24,26 +20,52 @@ let wardrobeItems = [
   },
 ];
 
-export function fetchWardrobeItems(category = 'All') {
-  const items =
+async function initializeStorage() {
+  const existing = await AsyncStorage.getItem(STORAGE_KEY);
+
+  if (!existing) {
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(defaultItems)
+    );
+  }
+}
+
+export async function fetchWardrobeItems(category = 'All') {
+  await initializeStorage();
+
+  const stored = await AsyncStorage.getItem(STORAGE_KEY);
+  const items = stored ? JSON.parse(stored) : [];
+
+  const filtered =
     category === 'All'
-      ? wardrobeItems
-      : wardrobeItems.filter((item) => item.category === category);
+      ? items
+      : items.filter((item) => item.category === category);
 
   return {
-    totalCount: items.length,
-    items,
+    totalCount: filtered.length,
+    items: filtered,
   };
 }
 
-export function addWardrobeItem(item) {
-  wardrobeItems = [
-    ...wardrobeItems,
+export async function addWardrobeItem(item) {
+  await initializeStorage();
+
+  const stored = await AsyncStorage.getItem(STORAGE_KEY);
+  const items = stored ? JSON.parse(stored) : [];
+
+  const updated = [
+    ...items,
     {
       id: Date.now().toString(),
       ...item,
     },
   ];
 
-  return wardrobeItems;
+  await AsyncStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(updated)
+  );
+
+  return updated;
 }
