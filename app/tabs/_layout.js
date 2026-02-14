@@ -10,7 +10,7 @@ function WardrobeButton() {
   const handlePress = () => {
     if (isOnWardrobe) {
       // Add-item flow will be wired later
-      global.openAddWardrobeItem?.();
+      router.push('/add-item');
     } else {
       router.push('/tabs/wardrobe');
     }
