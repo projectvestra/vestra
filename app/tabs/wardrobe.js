@@ -69,10 +69,12 @@ export default function Wardrobe() {
           data={wardrobeData.items}
           keyExtractor={(item) => item.id}
           numColumns={2}
+          contentContainerStyle = {styles.list}
           renderItem={({ item }) => (
-            <WardrobeItemCard item={item} />
+            <WardrobeItemCard item={item}
+            onDelete={loadData}
+            />
           )}
-          contentContainerStyle={styles.list}
         />
       )}
     </View>

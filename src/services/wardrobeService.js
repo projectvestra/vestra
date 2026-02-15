@@ -69,3 +69,16 @@ export async function addWardrobeItem(item) {
 
   return updated;
 }
+export async function deleteWardrobeItem(id) {
+  const stored = await AsyncStorage.getItem(STORAGE_KEY);
+  const items = stored ? JSON.parse(stored) : [];
+
+  const updated = items.filter((item) => item.id !== id);
+
+  await AsyncStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(updated)
+  );
+
+  return updated;
+}
