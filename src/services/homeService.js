@@ -1,19 +1,18 @@
-// Mock service layer — replace with real API calls later
+import { fetchWardrobeItems } from './wardrobeService';
 
-export function getTodayOutfit() {
+export async function getHomeSummary() {
+  const allData = await fetchWardrobeItems('All');
+
+  const totalItems = allData.totalCount;
+  const items = allData.items;
+
+  const recentItem =
+    items.length > 0
+      ? items[items.length - 1]
+      : null;
+
   return {
-    top: 'White T-Shirt',
-    bottom: 'Blue Jeans',
-    footwear: 'White Sneakers',
+    totalItems,
+    recentItem,
   };
-}
-
-export function getWeeklyPlan() {
-  return [
-    { day: 'Mon', outfit: 'Casual' },
-    { day: 'Tue', outfit: 'Formal' },
-    { day: 'Wed', outfit: 'Sporty' },
-    { day: 'Thu', outfit: 'Streetwear' },
-    { day: 'Fri', outfit: 'Casual' },
-  ];
 }
