@@ -1,57 +1,82 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
+  FlatList,
 } from 'react-native';
 
-import { getWardrobeItems } from '../../src/services/wardrobeService';
-import WardrobeItemCard from '../../src/components/wardrobeItemCard';
+import { fetchWardrobeItems } from '../../src/services/wardrobeService';
+import WardrobeItemCard from '../../src/components/WardrobeItemCard';
 
-const CATEGORIES = ['shirts', 'pants', 'shoes', 'accessories'];
+const CATEGORIES = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
 export default function Wardrobe() {
-  const [selectedCategory, setSelectedCategory] = useState('shirts');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [wardrobeData, setWardrobeData] = useState({
+    totalCount: 0,
+    items: [],
+  });
 
-  const items = getWardrobeItems().filter(
-    (item) => item.category === selectedCategory
-  );
+  useEffect(() => {
+    loadData();
+  }, [selectedCategory]);
+
+  const loadData = async () => {
+    const data = await fetchWardrobeItems(selectedCategory);
+    setWardrobeData(data);
+  };
 
   return (
     <View style={styles.container}>
-      {/* Category Tabs */}
-      <View style={styles.tabs}>
+      <Text style={styles.title}>My Wardrobe</Text>
+
+      <Text style={styles.subtitle}>
+        {wardrobeData.totalCount} items
+      </Text>
+
+      <View style={styles.categories}>
         {CATEGORIES.map((category) => (
           <TouchableOpacity
             key={category}
             onPress={() => setSelectedCategory(category)}
             style={[
-              styles.tab,
-              selectedCategory === category && styles.activeTab,
+              styles.category,
+              selectedCategory === category && styles.activeCategory,
             ]}
           >
             <Text
               style={[
-                styles.tabText,
-                selectedCategory === category && styles.activeTabText,
+                styles.categoryText,
+                selectedCategory === category && styles.activeCategoryText,
               ]}
             >
-              {category.toUpperCase()}
+              {category}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Items Grid */}
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => <WardrobeItemCard item={item} />}
-      />
+      {wardrobeData.items.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>
+            No items in this category yet
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={wardrobeData.items}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          contentContainerStyle = {styles.list}
+          renderItem={({ item }) => (
+            <WardrobeItemCard item={item}
+            onDelete={loadData}
+            />
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -60,31 +85,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingHorizontal: 16,
   },
-  tabs: {
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    marginTop: 16,
+    color: '#111',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  categories: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
-  tab: {
+  category: {
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
-  activeTab: {
+  activeCategory: {
     borderBottomWidth: 2,
     borderBottomColor: '#000',
   },
-  tabText: {
+  categoryText: {
     fontSize: 13,
     color: '#777',
   },
-  activeTabText: {
+  activeCategoryText: {
     color: '#000',
     fontWeight: '600',
   },
   list: {
-    padding: 8,
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 14,
   },
 });
