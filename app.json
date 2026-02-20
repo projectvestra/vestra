@@ -8,6 +8,9 @@
     "scheme": "vestra",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "newsApiKey": "aaf75385d0334c189ae57c2bea65ba0a"
+    },
     "ios": {
       "supportsTablet": true
     },
