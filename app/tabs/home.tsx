@@ -1,41 +1,85 @@
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { getTodayOutfit, getWeeklyPlan } from '../../src/services/homeService';
-import TodayOutfitCard from '../../src/components/TodayOutfitCard';
-import ActionCard from '../../src/components/ActionCard';
-import SectionHeader from '../../src/components/SectionHeader';
+import { useEffect, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
+import GreetingSection from '../../src/components/home/GreetingSection';
+import TodayOutfitCard from '../../src/components/home/TodayOutfitCard';
+import QuickActionCard from '../../src/components/home/QuickActionCard';
+import WeeklyPreview from '../../src/components/home/WeeklyPreview';
+
+import {
+  getHomeSummary,
+  getTodayOutfit,
+  getWeeklyPreview,
+} from '../../src/services/homeService';
+
+import { useRouter } from 'expo-router';
 
 export default function Home() {
-  const todayOutfit = getTodayOutfit();
-  const weeklyPlan = getWeeklyPlan(); // unused for now (future)
+  const router = useRouter();
+
+  const [summary, setSummary] = useState({
+    totalItems: 0,
+    recentItem: null,
+  });
+
+  const [outfit, setOutfit] = useState({});
+ const [weekly, setWeekly] = useState<
+  { day: string; tag: string }[]
+>([]);
+
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    const summaryData = await getHomeSummary();
+    const outfitData = await getTodayOutfit();
+    const weeklyData = await getWeeklyPreview();
+
+    setSummary(summaryData);
+    setOutfit(outfitData);
+    setWeekly(weeklyData);
+  };
 
   return (
     <ScrollView style={styles.container}>
-      {/* Mannequin / Placeholder */}
-      <View style={styles.mannequinPlaceholder} />
+      <GreetingSection
+        name="Arnav"
+        totalItems={summary.totalItems}
+        recentItem={summary.recentItem}
+      />
 
-      {/* Today’s Outfit */}
-      <SectionHeader title="Today’s Look" />
-<TodayOutfitCard outfit={todayOutfit} />
+      <TodayOutfitCard outfit={outfit} />
 
-<SectionHeader title="Quick Actions" />
-<ActionCard title="Today’s Outfit" />
-<ActionCard title="Outfit Planner" />
-<ActionCard title="Weekly Planner" />
+      <View style={{ marginTop: 24 }}>
+        <QuickActionCard
+          title="Plan Weekly Outfits"
+          onPress={() => router.push('./planner')}
+        />
+        <QuickActionCard
+          title="View Wardrobe"
+          onPress={() => router.push('/tabs/wardrobe')}
+        />
+        <QuickActionCard
+          title="Explore Trends"
+          onPress={() => router.push('/tabs/explore')}
+        />
+      </View>
 
+      <WeeklyPreview weeklyData={weekly} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    flex: 1,
+    paddingHorizontal: 16,
     backgroundColor: '#fff',
-  },
-  mannequinPlaceholder: {
-    height: 200,
-    borderRadius: 16,
-    backgroundColor: '#eaeaea',
-    marginBottom: 24,
   },
 });

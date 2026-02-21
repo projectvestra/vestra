@@ -1,0 +1,38 @@
+export const mockExploreData = [
+  {
+    id: '1',
+    title: 'Minimalist Fashion Dominates 2025',
+    description: 'Neutral tones and structured silhouettes are shaping modern wardrobes.',
+    image: null,
+    source: 'Style Daily',
+    publishedAt: '2025-01-10',
+    url: 'https://example.com/fashion1',
+  },
+  {
+    id: '2',
+    title: 'Streetwear Evolution Continues',
+    description: 'Oversized fits and bold sneakers remain on top.',
+    image: null,
+    source: 'Urban Trends',
+    publishedAt: '2025-01-08',
+    url: 'https://example.com/fashion2',
+  },
+  {
+    id: '3',
+    title: 'Sustainable Fabrics Rising',
+    description: 'Eco-friendly materials redefine luxury brands.',
+    image: null,
+    source: 'Eco Fashion',
+    publishedAt: '2025-01-06',
+    url: 'https://example.com/fashion3',
+  },
+  {
+    id: '4',
+    title: 'Office Wear Gets Relaxed',
+    description: 'Smart-casual blends dominate work wardrobes.',
+    image: null,
+    source: 'Corporate Style',
+    publishedAt: '2025-01-05',
+    url: 'https://example.com/fashion4',
+  },
+];
