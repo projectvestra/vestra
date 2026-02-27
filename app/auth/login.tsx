@@ -5,8 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { useState } from 'react';
-import { loginWithEmail } from '../../src/services/authService';
+import { useState, useEffect } from 'react';
+import {
+  loginWithEmail,
+  useGoogleAuthRequest,
+  loginWithGoogle,
+} from '../../src/services/authService';
 import { Colors } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 
@@ -18,6 +22,28 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { request, response, promptAsync } = useGoogleAuthRequest();
+
+  /* ---------------------------------------------
+     Handle Google Response
+  --------------------------------------------- */
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const idToken = response.params?.id_token;
+
+      console.log('Google response:', response);
+
+      if (idToken) {
+        loginWithGoogle(idToken);
+      } else {
+        setError('Google authentication failed.');
+      }
+    }
+  }, [response]);
+
+  /* ---------------------------------------------
+     Handle Email Login
+  --------------------------------------------- */
   const handleLogin = async () => {
     setError('');
 
@@ -37,7 +63,6 @@ export default function Login() {
     }
 
     setLoading(false);
-    // No manual navigation
     // Root layout handles redirect
   };
 
@@ -71,6 +96,17 @@ export default function Login() {
       >
         <Text style={styles.primaryButtonText}>
           {loading ? 'Logging in...' : 'Login'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Google Login Button */}
+      <TouchableOpacity
+        style={styles.googleButton}
+        onPress={() => promptAsync()}
+        disabled={!request}
+      >
+        <Text style={styles.googleText}>
+          Continue with Google
         </Text>
       </TouchableOpacity>
 
@@ -114,12 +150,26 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 8,
     marginTop: 8,
+    alignItems: 'center',
   },
   primaryButtonText: {
     color: '#fff',
-    textAlign: 'center',
     fontSize: 16,
     fontWeight: '500',
+  },
+  googleButton: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingVertical: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  googleText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.light.text,
   },
   footerText: {
     marginTop: 24,
