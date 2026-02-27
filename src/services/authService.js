@@ -11,12 +11,15 @@ import {
   signInWithCredential,
 } from 'firebase/auth';
 
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
-// Required for auth-session
-WebBrowser.maybeCompleteAuthSession();
+/* ---------------------------------------------
+   Configure Google Sign-In (Native)
+--------------------------------------------- */
+
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
 
 /* ---------------------------------------------
    Email Register
@@ -75,41 +78,32 @@ export async function loginWithEmail(email, password) {
 }
 
 /* ---------------------------------------------
-   Google Login (Expo Compatible)
+   Native Google Login (Android Production Safe)
 --------------------------------------------- */
-
-export function useGoogleAuthRequest() {
-  // const [request, response, promptAsync] = Google.useAuthRequest({
-  //   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  //   responseType: 'id_token',
-  //   scopes:['openid','profile','email'],
-  // });
-
-  // return { request, response, promptAsync };
-
-   const redirectUri = makeRedirectUri();
-
-  console.log("ACTUAL REDIRECT URI:", redirectUri);
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    responseType: 'id_token',
-    scopes: ['openid', 'profile', 'email'],
-    redirectUri,
-  });
-
-  return { request, response, promptAsync };
-}
-
-export async function loginWithGoogle(idToken) {
+export async function loginWithGoogle() {
   try {
+    await GoogleSignin.hasPlayServices({
+      showPlayServicesUpdateDialog: true,
+    });
+
+    const userInfo = await GoogleSignin.signIn();
+
+    console.log("USER INFO:", userInfo);
+
+    const idToken = userInfo.data?.idToken;
+
+    console.log("ID TOKEN:", idToken);
+
     if (!idToken) {
-      return { success: false, message: 'No Google token received.' };
+      return {
+        success: false,
+        message: 'Google idToken not received.',
+      };
     }
 
-    const credential = GoogleAuthProvider.credential(idToken);
+    const googleCredential = GoogleAuthProvider.credential(idToken);
 
-    const result = await signInWithCredential(auth, credential);
+    const result = await signInWithCredential(auth, googleCredential);
 
     return {
       success: true,
@@ -117,10 +111,10 @@ export async function loginWithGoogle(idToken) {
       user: result.user,
     };
   } catch (error) {
-    console.log("GOOGLE LOGIN ERROR:", error);
+    console.log('GOOGLE LOGIN ERROR:', error);
     return {
       success: false,
-      message: error.message,
+      message: error.message || 'Google authentication failed.',
     };
   }
 }
@@ -130,7 +124,9 @@ export async function loginWithGoogle(idToken) {
 --------------------------------------------- */
 export async function logout() {
   try {
+    await GoogleSignin.signOut(); // native signout
     await signOut(auth);
+
     return { success: true };
   } catch (error) {
     return { success: false, message: error.message };
@@ -150,4 +146,3 @@ export function getCurrentUser() {
 export function listenToAuthState(callback) {
   return onAuthStateChanged(auth, callback);
 }
-console.log("Redirect URI:", makeRedirectUri());
