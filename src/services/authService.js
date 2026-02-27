@@ -79,9 +79,23 @@ export async function loginWithEmail(email, password) {
 --------------------------------------------- */
 
 export function useGoogleAuthRequest() {
+  // const [request, response, promptAsync] = Google.useAuthRequest({
+  //   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  //   responseType: 'id_token',
+  //   scopes:['openid','profile','email'],
+  // });
+
+  // return { request, response, promptAsync };
+
+   const redirectUri = makeRedirectUri();
+
+  console.log("ACTUAL REDIRECT URI:", redirectUri);
+
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    responseType: 'id_token',
+    scopes: ['openid', 'profile', 'email'],
+    redirectUri,
   });
 
   return { request, response, promptAsync };
@@ -89,6 +103,10 @@ export function useGoogleAuthRequest() {
 
 export async function loginWithGoogle(idToken) {
   try {
+    if (!idToken) {
+      return { success: false, message: 'No Google token received.' };
+    }
+
     const credential = GoogleAuthProvider.credential(idToken);
 
     const result = await signInWithCredential(auth, credential);
@@ -99,6 +117,7 @@ export async function loginWithGoogle(idToken) {
       user: result.user,
     };
   } catch (error) {
+    console.log("GOOGLE LOGIN ERROR:", error);
     return {
       success: false,
       message: error.message,
@@ -131,3 +150,4 @@ export function getCurrentUser() {
 export function listenToAuthState(callback) {
   return onAuthStateChanged(auth, callback);
 }
+console.log("Redirect URI:", makeRedirectUri());
