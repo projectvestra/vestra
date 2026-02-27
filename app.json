@@ -23,7 +23,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.vestra"
+      "package": "com.anonymous.vestra",
+      "googleServicesFile": "./android/app/google-services.json"
     },
     "web": {
       "output": "static",
@@ -42,7 +43,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
