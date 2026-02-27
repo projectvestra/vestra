@@ -1,5 +1,4 @@
-import React from 'react';
-import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,24 +6,61 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { registerWithEmail } from '../../services/authService';
+import { Colors } from '../../../constants/theme';
 
 export default function SignupScreen() {
-  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSignup = async () => {
+    setError('');
+
+    if (!name || !email || !password) {
+      setError('All fields are required.');
+      return;
+    }
+
+    setLoading(true);
+
+    const result = await registerWithEmail(name, email, password);
+
+    if (!result.success) {
+      setError(result.message);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    // DO NOT navigate manually
+    // Root auth listener will handle redirect
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Create Account</Text>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TextInput
         placeholder="Full Name"
         placeholderTextColor="#999"
         style={styles.input}
+        value={name}
+        onChangeText={setName}
       />
 
       <TextInput
         placeholder="Email"
         placeholderTextColor="#999"
         keyboardType="email-address"
+        autoCapitalize="none"
         style={styles.input}
+        value={email}
+        onChangeText={setEmail}
       />
 
       <TextInput
@@ -32,19 +68,18 @@ export default function SignupScreen() {
         placeholderTextColor="#999"
         secureTextEntry
         style={styles.input}
+        value={password}
+        onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.primaryButton}
-      onPress={() => router.push('/onboarding/step1')}
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={handleSignup}
       >
-        <Text style={styles.primaryButtonText}>Sign Up</Text>
+        <Text style={styles.primaryButtonText}>
+          {loading ? 'Creating...' : 'Sign Up'}
+        </Text>
       </TouchableOpacity>
-
-      <Text style={styles.footerText}
-        onPress={() => router.push('/auth/login')}
-        >
-        Already have an account? Login
-      </Text>
     </View>
   );
 }
@@ -54,14 +89,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.light.background,
   },
   heading: {
     fontSize: 26,
     fontWeight: '600',
     marginBottom: 32,
     textAlign: 'center',
-    color: '#111',
+    color: Colors.light.text,
   },
   input: {
     borderWidth: 1,
@@ -71,10 +106,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 16,
     marginBottom: 16,
-    color: '#111',
+    color: Colors.light.text,
+    backgroundColor: '#fff',
   },
   primaryButton: {
-    backgroundColor: '#000',
+    backgroundColor: Colors.light.tint,
     paddingVertical: 16,
     borderRadius: 8,
     marginTop: 8,
@@ -85,10 +121,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  footerText: {
-    marginTop: 24,
+  error: {
+    color: 'red',
+    marginBottom: 16,
     textAlign: 'center',
-    color: '#666',
-    fontSize: 14,
   },
 });
