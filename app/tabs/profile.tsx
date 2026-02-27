@@ -13,6 +13,7 @@ import ProfileSectionCard from '../../src/components/ProfileSectionCard';
 import ProfileStatCard from '../../src/components/ProfileStatCard';
 import SettingsRow from '../../src/components/SettingsRow';
 import { Colors } from '../../constants/theme';
+import { logout } from '../../src/services/authService';
 
 export default function Profile() {
   const profile = fetchUserProfile();
@@ -152,7 +153,11 @@ export default function Profile() {
         <SettingsRow label="Notifications" />
         <SettingsRow label="Dark Mode" />
         <SettingsRow label="Privacy" />
-        <SettingsRow label="Logout" />
+        <SettingsRow label="Logout" 
+        onPress= {async () => {
+          await logout();
+        }}
+        />
       </ProfileSectionCard>
     </ScrollView>
   );
