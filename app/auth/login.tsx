@@ -5,10 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   loginWithEmail,
-  useGoogleAuthRequest,
   loginWithGoogle,
 } from '../../src/services/authService';
 import { Colors } from '../../constants/theme';
@@ -21,25 +20,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const { request, response, promptAsync } = useGoogleAuthRequest();
-
-  /* ---------------------------------------------
-     Handle Google Response
-  --------------------------------------------- */
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const idToken = response.params?.id_token;
-
-      console.log('Google response:', response);
-
-      if (idToken) {
-        loginWithGoogle(idToken);
-      } else {
-        setError('Google authentication failed.');
-      }
-    }
-  }, [response]);
 
   /* ---------------------------------------------
      Handle Email Login
@@ -55,6 +35,25 @@ export default function Login() {
     setLoading(true);
 
     const result = await loginWithEmail(email, password);
+
+    if (!result.success) {
+      setError(result.message);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    // Root layout handles redirect
+  };
+
+  /* ---------------------------------------------
+     Handle Native Google Login
+  --------------------------------------------- */
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+
+    const result = await loginWithGoogle();
 
     if (!result.success) {
       setError(result.message);
@@ -99,11 +98,10 @@ export default function Login() {
         </Text>
       </TouchableOpacity>
 
-      {/* Google Login Button */}
+      {/* Native Google Login */}
       <TouchableOpacity
         style={styles.googleButton}
-        onPress={() => promptAsync()}
-        disabled={!request}
+        onPress={handleGoogleLogin}
       >
         <Text style={styles.googleText}>
           Continue with Google
