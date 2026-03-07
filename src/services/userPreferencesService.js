@@ -1,0 +1,58 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const PREFERENCES_KEY = 'vestra_user_preferences';
+const ONBOARDING_KEY = 'vestra_onboarding_completed';
+
+/* ------------------------------------------
+   Save onboarding preferences
+------------------------------------------ */
+export async function savePreferences(preferences) {
+  try {
+    await AsyncStorage.setItem(
+      PREFERENCES_KEY,
+      JSON.stringify(preferences)
+    );
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+/* ------------------------------------------
+   Get saved preferences
+------------------------------------------ */
+export async function getPreferences() {
+  try {
+    const data = await AsyncStorage.getItem(PREFERENCES_KEY);
+
+    if (!data) return null;
+
+    return JSON.parse(data);
+  } catch (error) {
+    return null;
+  }
+}
+
+/* ------------------------------------------
+   Mark onboarding as complete
+------------------------------------------ */
+export async function setOnboardingCompleted() {
+  try {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+  } catch (error) {
+    console.log('Onboarding save error', error);
+  }
+}
+
+/* ------------------------------------------
+   Check onboarding status
+------------------------------------------ */
+export async function isOnboardingCompleted() {
+  try {
+    const value = await AsyncStorage.getItem(ONBOARDING_KEY);
+    return value === 'true';
+  } catch {
+    return false;
+  }
+}

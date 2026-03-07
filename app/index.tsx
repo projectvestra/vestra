@@ -1,13 +1,15 @@
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Redirect } from 'expo-router';
-import { isOnboardingComplete } from '../src/services/appStateService';
+import { View, ActivityIndicator } from 'react-native';
 
 export default function AppEntry() {
-  const onboardingDone = isOnboardingComplete();
-
-  if (onboardingDone) {
-    return <Redirect href="/tabs/home" />;
-  }
-
-  return <Redirect href="/auth/login" />;
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
+      <ActivityIndicator size="large" />
+    </View>
+  );
 }

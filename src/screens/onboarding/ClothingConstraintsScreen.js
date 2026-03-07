@@ -1,6 +1,9 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { completeOnboarding } from '../../services/appStateService';
+import {
+  setOnboardingCompleted,
+  savePreferences
+} from '../../services/userPreferencesService';
 
 
 export default function ClothingConstraintsScreen() {
@@ -27,10 +30,23 @@ export default function ClothingConstraintsScreen() {
       {/* Finish */}
       <TouchableOpacity 
       style={styles.finishButton} 
-      onPress ={() => {
-        completeOnboarding();
-        router.replace('/tabs/home');
-      }}
+      onPress={async () => {
+
+  const preferences = {
+    styles: [],
+    preferredColors: [],
+    bodyType: "",
+    height: "",
+    constraints: [],
+    primaryOccasions: []
+  };
+
+  await savePreferences(preferences);
+
+  await setOnboardingCompleted();
+
+  router.replace('/tabs/home');
+}}
       >
         <Text style={styles.finishButtonText}>Finish</Text>
       </TouchableOpacity>
