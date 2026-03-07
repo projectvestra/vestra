@@ -27,4 +27,5 @@ Implemented so far:
 3 Project is under active development
 
 ## Contributors
-Frontend development is being built incrementally with clear commit history for academic review(`Arnav-Goel-2301010070`).
+Frontend development is being built incrementally with clear commit history for academic review(`Arnav-Goel-2301010070`)
+(`Ranith-Mondal-2301010121`)..
