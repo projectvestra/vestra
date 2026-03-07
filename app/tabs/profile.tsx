@@ -5,21 +5,24 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-} from 'react-native';
-import { useEffect, useState, useMemo } from 'react';
+} from "react-native";
 
-import { fetchWardrobeItems } from '../../src/services/wardrobeService';
-import { getPreferences } from '../../src/services/userPreferencesService';
-import { auth } from '../../src/services/firebaseConfig';
+import { useState, useMemo, useCallback } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
 
-import ProfileSectionCard from '../../src/components/ProfileSectionCard';
-import ProfileStatCard from '../../src/components/ProfileStatCard';
-import SettingsRow from '../../src/components/SettingsRow';
+import { fetchWardrobeItems } from "../../src/services/wardrobeService";
+import { getPreferences } from "../../src/services/userPreferencesService";
+import { auth } from "../../src/services/firebaseConfig";
 
-import { Colors } from '../../constants/theme';
-import { logout } from '../../src/services/authService';
+import ProfileSectionCard from "../../src/components/ProfileSectionCard";
+import ProfileStatCard from "../../src/components/ProfileStatCard";
+import SettingsRow from "../../src/components/SettingsRow";
 
+import { Colors } from "../../constants/theme";
+import { logout } from "../../src/services/authService";
 export default function Profile() {
+
+  const router = useRouter();
 
   const [profile, setProfile] = useState<any>(null);
   const [wardrobeItems, setWardrobeItems] = useState<any[]>([]);
@@ -28,33 +31,36 @@ export default function Profile() {
   /* -------------------------------
      Load Profile Data
   --------------------------------*/
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     const loadProfile = async () => {
       try {
         const user = auth.currentUser;
         const preferences = await getPreferences();
 
         setProfile({
-          name: user?.displayName || 'User',
-          email: user?.email || '',
-          height: preferences?.height || '',
-          bodyType: preferences?.bodyType || '',
+          name: user?.displayName || "User",
+          email: user?.email || "",
+          height: preferences?.height || "",
+          bodyType: preferences?.bodyType || "",
           styles: preferences?.styles || [],
           colors: preferences?.preferredColors || [],
           constraints: preferences?.constraints || [],
         });
       } catch (error) {
-        console.error('Failed to load profile:', error);
+        console.error("Failed to load profile:", error);
       }
     };
 
     loadProfile();
-  }, []);
+  }, [])
+);
 
   /* -------------------------------
      Load Wardrobe
   --------------------------------*/
-  useEffect(() => {
+ useFocusEffect(
+  useCallback(() => {
     const loadWardrobe = async () => {
       try {
         const data = await fetchWardrobeItems();
@@ -67,7 +73,7 @@ export default function Profile() {
           setWardrobeItems([]);
         }
       } catch (error) {
-        console.error('Failed to fetch wardrobe items:', error);
+        console.error("Failed to fetch wardrobe items:", error);
         setWardrobeItems([]);
       } finally {
         setLoading(false);
@@ -75,7 +81,8 @@ export default function Profile() {
     };
 
     loadWardrobe();
-  }, []);
+  }, [])
+);
 
   /* -------------------------------
      Wardrobe Stats
@@ -114,7 +121,10 @@ export default function Profile() {
         <Text style={styles.name}>{profile?.name}</Text>
         <Text style={styles.email}>{profile?.email}</Text>
 
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => router.push("/edit-profile")}
+        >
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
@@ -138,7 +148,9 @@ export default function Profile() {
         </Text>
 
         <Text style={styles.metaText}>
-          Constraints: {profile?.constraints?.join(', ') || 'None'}
+          Constraints: {profile?.constraints?.length
+  ? profile.constraints.join(", ")
+  : "None"}
         </Text>
       </ProfileSectionCard>
 
