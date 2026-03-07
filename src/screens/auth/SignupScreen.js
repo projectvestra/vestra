@@ -6,10 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { registerWithEmail } from '../../services/authService';
 import { Colors } from '../../../constants/theme';
 
 export default function SignupScreen() {
+  const router = useRouter();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,8 +38,9 @@ export default function SignupScreen() {
     }
 
     setLoading(false);
-    // DO NOT navigate manually
-    // Root auth listener will handle redirect
+
+    // Immediately send new users to onboarding
+    router.replace('/onboarding/step1');
   };
 
   return (

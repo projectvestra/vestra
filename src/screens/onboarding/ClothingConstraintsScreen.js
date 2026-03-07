@@ -1,52 +1,76 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { useOnboarding } from '../../context/OnboardingContext';
 import {
   setOnboardingCompleted,
   savePreferences
 } from '../../services/userPreferencesService';
 
-
 export default function ClothingConstraintsScreen() {
   const router = useRouter();
+  const { preferences, updatePreferences } = useOnboarding();
+
+  const [selectedConstraints, setSelectedConstraints] = useState([]);
+
+  const constraintsList = [
+    "No Sleeveless",
+    "Loose Fit",
+    "Formal Wear Only",
+    "No Leather"
+  ];
+
+  const toggleConstraint = (constraint) => {
+    if (selectedConstraints.includes(constraint)) {
+      setSelectedConstraints(
+        selectedConstraints.filter(c => c !== constraint)
+      );
+    } else {
+      setSelectedConstraints([...selectedConstraints, constraint]);
+    }
+  };
+
+  const handleFinish = async () => {
+    updatePreferences({ constraints: selectedConstraints });
+
+    const finalPreferences = {
+      ...preferences,
+      constraints: selectedConstraints
+    };
+
+    await savePreferences(finalPreferences);
+    await setOnboardingCompleted();
+
+    router.replace('/tabs/home');
+  };
+
   return (
     <View style={styles.container}>
-      {/* Progress */}
       <Text style={styles.progress}>Step 4 of 4</Text>
 
-      {/* Title */}
       <Text style={styles.title}>Any clothing preferences?</Text>
       <Text style={styles.subtitle}>
         Let us know if you avoid or prefer certain clothing.
       </Text>
 
-      {/* Options (UI-only) */}
       <View style={styles.optionsContainer}>
-        <View style={styles.option}><Text>No Sleeveless</Text></View>
-        <View style={styles.option}><Text>Loose Fit</Text></View>
-        <View style={styles.option}><Text>Formal Wear Only</Text></View>
-        <View style={styles.option}><Text>No Leather</Text></View>
+        {constraintsList.map((constraint) => (
+          <TouchableOpacity
+            key={constraint}
+            style={[
+              styles.option,
+              selectedConstraints.includes(constraint) && styles.selected
+            ]}
+            onPress={() => toggleConstraint(constraint)}
+          >
+            <Text style={styles.optionText}>{constraint}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Finish */}
-      <TouchableOpacity 
-      style={styles.finishButton} 
-      onPress={async () => {
-
-  const preferences = {
-    styles: [],
-    preferredColors: [],
-    bodyType: "",
-    height: "",
-    constraints: [],
-    primaryOccasions: []
-  };
-
-  await savePreferences(preferences);
-
-  await setOnboardingCompleted();
-
-  router.replace('/tabs/home');
-}}
+      <TouchableOpacity
+        style={styles.finishButton}
+        onPress={handleFinish}
       >
         <Text style={styles.finishButtonText}>Finish</Text>
       </TouchableOpacity>
@@ -90,6 +114,14 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 12,
+  },
+  selected: {
+    backgroundColor: '#000',
+    borderColor: '#000'
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#111',
   },
   finishButton: {
     backgroundColor: '#000',
