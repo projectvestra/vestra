@@ -7,26 +7,58 @@ import {
   FlatList,
 } from 'react-native';
 import { useEffect, useState, useMemo } from 'react';
-import { fetchUserProfile } from '../../src/services/profileService';
+
 import { fetchWardrobeItems } from '../../src/services/wardrobeService';
+import { getPreferences } from '../../src/services/userPreferencesService';
+import { auth } from '../../src/services/firebaseConfig';
+
 import ProfileSectionCard from '../../src/components/ProfileSectionCard';
 import ProfileStatCard from '../../src/components/ProfileStatCard';
 import SettingsRow from '../../src/components/SettingsRow';
+
 import { Colors } from '../../constants/theme';
 import { logout } from '../../src/services/authService';
 
 export default function Profile() {
-  const profile = fetchUserProfile();
 
+  const [profile, setProfile] = useState<any>(null);
   const [wardrobeItems, setWardrobeItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /* -------------------------------
+     Load Profile Data
+  --------------------------------*/
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const user = auth.currentUser;
+        const preferences = await getPreferences();
+
+        setProfile({
+          name: user?.displayName || 'User',
+          email: user?.email || '',
+          height: preferences?.height || '',
+          bodyType: preferences?.bodyType || '',
+          styles: preferences?.styles || [],
+          colors: preferences?.preferredColors || [],
+          constraints: preferences?.constraints || [],
+        });
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  /* -------------------------------
+     Load Wardrobe
+  --------------------------------*/
   useEffect(() => {
     const loadWardrobe = async () => {
       try {
         const data = await fetchWardrobeItems();
 
-        // If your service returns { totalCount, items }
         if (data?.items) {
           setWardrobeItems(data.items);
         } else if (Array.isArray(data)) {
@@ -45,6 +77,9 @@ export default function Profile() {
     loadWardrobe();
   }, []);
 
+  /* -------------------------------
+     Wardrobe Stats
+  --------------------------------*/
   const stats = useMemo(() => {
     const breakdown: Record<string, number> = {
       Shirts: 0,
@@ -75,6 +110,7 @@ export default function Profile() {
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.avatar} />
+
         <Text style={styles.name}>{profile?.name}</Text>
         <Text style={styles.email}>{profile?.email}</Text>
 
@@ -86,12 +122,23 @@ export default function Profile() {
       {/* STYLE IDENTITY */}
       <ProfileSectionCard title="Style Identity">
         <Text style={styles.metaText}>
-          Preferred Style: {profile?.stylePreference || '—'}
+          Preferred Styles: {profile?.styles?.join(', ') || '—'}
         </Text>
-        <Text style={styles.metaText}>Color Palette: Neutral</Text>
-        <Text style={styles.metaText}>Body Type: Athletic</Text>
-        <Text style={styles.tagline}>
-          Minimal | Streetwear | Neutral Tones
+
+        <Text style={styles.metaText}>
+          Colors: {profile?.colors?.join(', ') || '—'}
+        </Text>
+
+        <Text style={styles.metaText}>
+          Body Type: {profile?.bodyType || '—'}
+        </Text>
+
+        <Text style={styles.metaText}>
+          Height: {profile?.height ? `${profile.height} cm` : '—'}
+        </Text>
+
+        <Text style={styles.metaText}>
+          Constraints: {profile?.constraints?.join(', ') || 'None'}
         </Text>
       </ProfileSectionCard>
 
@@ -102,22 +149,10 @@ export default function Profile() {
         ) : (
           <View style={styles.statGrid}>
             <ProfileStatCard value={stats.total} label="Total Items" />
-            <ProfileStatCard
-              value={stats.breakdown.Shirts}
-              label="Shirts"
-            />
-            <ProfileStatCard
-              value={stats.breakdown.Pants}
-              label="Pants"
-            />
-            <ProfileStatCard
-              value={stats.breakdown.Shoes}
-              label="Shoes"
-            />
-            <ProfileStatCard
-              value={stats.breakdown.Accessories}
-              label="Accessories"
-            />
+            <ProfileStatCard value={stats.breakdown.Shirts} label="Shirts" />
+            <ProfileStatCard value={stats.breakdown.Pants} label="Pants" />
+            <ProfileStatCard value={stats.breakdown.Shoes} label="Shoes" />
+            <ProfileStatCard value={stats.breakdown.Accessories} label="Accessories" />
           </View>
         )}
       </ProfileSectionCard>
@@ -127,23 +162,23 @@ export default function Profile() {
         <Text style={styles.metaText}>
           Recently Added: Black Oversized Tee
         </Text>
+
         <Text style={styles.metaText}>
           Last Outfit Generated: Street Casual Fit
         </Text>
+
         <Text style={styles.metaText}>
-          Saved Looks - TO BE ADDED 
+          Saved Looks - TO BE ADDED
         </Text>
       </ProfileSectionCard>
 
-      {/* WISHLIST PLACEHOLDER */}
+      {/* WISHLIST */}
       <ProfileSectionCard title="Wishlist">
         <FlatList
           horizontal
           data={[1, 2, 3]}
           keyExtractor={(item) => item.toString()}
-          renderItem={() => (
-            <View style={styles.wishlistCard} />
-          )}
+          renderItem={() => <View style={styles.wishlistCard} />}
           showsHorizontalScrollIndicator={false}
         />
       </ProfileSectionCard>
@@ -153,10 +188,11 @@ export default function Profile() {
         <SettingsRow label="Notifications" />
         <SettingsRow label="Dark Mode" />
         <SettingsRow label="Privacy" />
-        <SettingsRow label="Logout" 
-        onPress= {async () => {
-          await logout();
-        }}
+        <SettingsRow
+          label="Logout"
+          onPress={async () => {
+            await logout();
+          }}
         />
       </ProfileSectionCard>
     </ScrollView>
@@ -174,6 +210,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+
   avatar: {
     width: 100,
     height: 100,
@@ -181,16 +218,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e5e5',
     marginBottom: 12,
   },
+
   name: {
     fontSize: 20,
     fontWeight: '700',
     color: Colors.light.text,
   },
+
   email: {
     fontSize: 13,
     color: Colors.light.icon,
     marginTop: 4,
   },
+
   editButton: {
     marginTop: 12,
     backgroundColor: Colors.light.tint,
@@ -198,6 +238,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
   },
+
   editText: {
     color: '#fff',
     fontSize: 13,
@@ -208,11 +249,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.text,
     marginBottom: 6,
-  },
-  tagline: {
-    fontSize: 12,
-    color: Colors.light.icon,
-    marginTop: 8,
   },
 
   statGrid: {
