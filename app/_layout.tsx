@@ -5,6 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { Colors } from '../constants/theme';
 import type { User } from 'firebase/auth';
 import { isOnboardingCompleted } from '../src/services/userPreferencesService';
+import { OnboardingProvider } from '../src/context/OnboardingContext';
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
@@ -21,32 +22,58 @@ export default function RootLayout() {
 
     return unsubscribe;
   }, []);
-
-
-  useEffect(() => {
+useEffect(() => {
   const checkNavigation = async () => {
     if (loading) return;
-
-    const onboardingDone = await isOnboardingCompleted();
-
-    console.log("USER:", user);
-    console.log("ONBOARDING:", onboardingDone);
 
     if (!user) {
       router.replace('/auth/login');
       return;
     }
 
-    if (!onboardingDone) {
-      router.replace('/onboarding/step1');
-      return;
-    }
+    try {
+      const onboardingDone = await isOnboardingCompleted();
 
-    router.replace('/tabs/home');
+      console.log("ONBOARDING STATUS:", onboardingDone);
+
+      if (!onboardingDone) {
+        router.replace('/onboarding/step1');
+      } else {
+        router.replace('/tabs/home');
+      }
+    } catch (error) {
+      console.log("Onboarding check error:", error);
+      router.replace('/onboarding/step1');
+    }
   };
 
   checkNavigation();
 }, [user, loading]);
+
+//   useEffect(() => {
+//   const checkNavigation = async () => {
+//     if (loading) return;
+
+//     const onboardingDone = await isOnboardingCompleted();
+
+//     console.log("USER:", user);
+//     console.log("ONBOARDING:", onboardingDone);
+
+//     if (!user) {
+//       router.replace('/auth/login');
+//       return;
+//     }
+
+//     if (!onboardingDone) {
+//       router.replace('/onboarding/step1');
+//       return;
+//     }
+
+//     router.replace('/tabs/home');
+//   };
+
+//   checkNavigation();
+// }, [user, loading]);
 
 //   useEffect(() => {
    
@@ -117,5 +144,9 @@ export default function RootLayout() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+  <OnboardingProvider>
+    <Stack screenOptions={{ headerShown: false }} />
+  </OnboardingProvider>
+);
 }

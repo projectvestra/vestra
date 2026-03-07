@@ -1,36 +1,51 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { useOnboarding } from '../../context/OnboardingContext';
 
 export default function BasicDetailsScreen() {
   const router = useRouter();
+  const { updatePreferences } = useOnboarding();
+
+  const [height, setHeight] = useState('');
+  const [bodyType, setBodyType] = useState('');
+
+  const handleContinue = () => {
+    updatePreferences({
+      height,
+      bodyType
+    });
+
+    router.push('/onboarding/step2');
+  };
 
   return (
     <View style={styles.container}>
-      {/* Progress */}
       <Text style={styles.progress}>Step 1 of 4</Text>
 
-      {/* Title */}
       <Text style={styles.title}>Tell us about yourself</Text>
       <Text style={styles.subtitle}>
         This helps us personalize your outfit suggestions.
       </Text>
 
-      {/* Inputs */}
       <TextInput
         placeholder="Height (cm)"
         keyboardType="numeric"
         style={styles.input}
+        value={height}
+        onChangeText={setHeight}
       />
 
       <TextInput
         placeholder="Body Type (optional)"
         style={styles.input}
+        value={bodyType}
+        onChangeText={setBodyType}
       />
 
-      {/* Action */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/onboarding/step2')}
+        onPress={handleContinue}
       >
         <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
