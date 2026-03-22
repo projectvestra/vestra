@@ -72,6 +72,7 @@ export default function AddItem() {
   const [imageUri, setImageUri] = useState(null);
   const [dominantColor, setDominantColor] = useState(null);
   const [colorName, setColorName] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const extractColor = async (uri) => {
     try {
@@ -139,7 +140,7 @@ export default function AddItem() {
       Alert.alert('Please select an image');
       return;
     }
-
+    setLoading(true);
     const imageUrl = await uploadWardrobeImage(imageUri);
 
     await createWardrobeItem({
@@ -154,6 +155,8 @@ export default function AddItem() {
     router.back();
   } catch (error) {
     Alert.alert('Error', error.message);
+  }finally{
+    setLoading(false);
   }
   };
 
@@ -252,8 +255,12 @@ export default function AddItem() {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={{ color: '#fff' }}>Save Item</Text>
+      <TouchableOpacity 
+      style={styles.saveButton} 
+      onPress={handleSave}
+      disabled={loading}
+      >
+        <Text style={{ color: '#fff' }}>{loading ? 'Saving...':'Save Item'}</Text>
       </TouchableOpacity>
     </View>
   );
