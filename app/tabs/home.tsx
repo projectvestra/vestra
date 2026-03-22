@@ -1,3 +1,13 @@
+type WardrobeItem = {
+  id: string;
+  image: string;
+  name: string;
+  category: string;
+  color: string;
+  size?: string;
+  fit?: string;
+};
+
 import { useEffect, useState } from 'react';
 import {
   ScrollView,
@@ -21,10 +31,13 @@ import { useRouter } from 'expo-router';
 export default function Home() {
   const router = useRouter();
 
-  const [summary, setSummary] = useState({
-    totalItems: 0,
-    recentItem: null,
-  });
+  const [summary, setSummary] = useState<{
+  totalItems: number;
+  recentItem: WardrobeItem | null;
+}>({
+  totalItems: 0,
+  recentItem: null,
+});
 
   const [outfit, setOutfit] = useState({});
  const [weekly, setWeekly] = useState<
@@ -37,6 +50,7 @@ export default function Home() {
   }, []);
 
   const loadData = async () => {
+  try {
     const summaryData = await getHomeSummary();
     const outfitData = await getTodayOutfit();
     const weeklyData = await getWeeklyPreview();
@@ -44,7 +58,10 @@ export default function Home() {
     setSummary(summaryData);
     setOutfit(outfitData);
     setWeekly(weeklyData);
-  };
+  } catch (error) {
+    console.log('Home load error:', error);
+  }
+};
 
   return (
     <ScrollView style={styles.container}>
