@@ -24,8 +24,12 @@ export default function Wardrobe() {
   }, [selectedCategory]);
 
  const loadData = async () => {
-  const data = await getUserWardrobeItems();
-  setWardrobeData(data);
+  try {
+    const data = await getUserWardrobeItems();
+    setWardrobeData(data);
+  } catch (error) {
+    console.log('Wardrobe fetch error:', error);
+  }
 };
 
   return (

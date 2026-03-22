@@ -1,24 +1,25 @@
-import { fetchWardrobeItems } from './wardrobeService';
+import { getUserWardrobeItems } from './cloudWardrobeService';
 
+/* ------------------------------------------
+   Home Summary
+------------------------------------------ */
 export async function getHomeSummary() {
-  const allData = await fetchWardrobeItems('All');
+  const data = await getUserWardrobeItems();
 
-  const totalItems = allData.totalCount;
-  const items = allData.items;
-
-  const recentItem =
-    items.length > 0
-      ? items[0]
-      : null;
+  const items = data.items;
 
   return {
-    totalItems,
-    recentItem,
+    totalItems: items.length,
+    recentItem: items.length > 0 ? items[0] : null,
   };
 }
+
+/* ------------------------------------------
+   Today Outfit
+------------------------------------------ */
 export async function getTodayOutfit() {
-  const allData = await fetchWardrobeItems('All');
-  const items = allData.items;
+  const data = await getUserWardrobeItems();
+  const items = data.items;
 
   const shirt = items.find(i => i.category === 'Shirts');
   const pants = items.find(i => i.category === 'Pants');
@@ -33,6 +34,9 @@ export async function getTodayOutfit() {
   };
 }
 
+/* ------------------------------------------
+   Weekly Preview (Mock)
+------------------------------------------ */
 export async function getWeeklyPreview() {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
