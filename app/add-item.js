@@ -10,7 +10,10 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import ImageColors from 'react-native-image-colors';
 import { useRouter } from 'expo-router';
-import { addWardrobeItem } from '../src/services/wardrobeService';
+import {
+  uploadWardrobeImage,
+  createWardrobeItem
+} from '../src/services/cloudWardrobeService';
 
 const CATEGORIES = ['Shirts', 'Pants', 'Shoes', 'Accessories'];
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
@@ -131,24 +134,27 @@ export default function AddItem() {
   };
 
   const handleSave = async () => {
+    try {
     if (!imageUri) {
       Alert.alert('Please select an image');
       return;
     }
 
-    const generatedName =
-      (colorName || 'Unknown') + ' ' + category;
+    const imageUrl = await uploadWardrobeImage(imageUri);
 
-    await addWardrobeItem({
-      name: generatedName,
+    await createWardrobeItem({
+      imageUrl,
       category,
-      color: dominantColor,
+      colorName,
+      colorHex: dominantColor,
       size,
       fit,
-      image: imageUri,
     });
 
     router.back();
+  } catch (error) {
+    Alert.alert('Error', error.message);
+  }
   };
 
   return (

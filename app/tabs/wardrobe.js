@@ -7,7 +7,7 @@ import {
   FlatList,
 } from 'react-native';
 
-import { fetchWardrobeItems } from '../../src/services/wardrobeService';
+import { getUserWardrobeItems } from '../../src/services/cloudWardrobeService';
 import WardrobeItemCard from '../../src/components/WardrobeItemCard';
 
 const CATEGORIES = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
@@ -23,10 +23,10 @@ export default function Wardrobe() {
     loadData();
   }, [selectedCategory]);
 
-  const loadData = async () => {
-    const data = await fetchWardrobeItems(selectedCategory);
-    setWardrobeData(data);
-  };
+ const loadData = async () => {
+  const data = await getUserWardrobeItems();
+  setWardrobeData(data);
+};
 
   return (
     <View style={styles.container}>
