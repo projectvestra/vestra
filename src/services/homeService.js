@@ -8,7 +8,7 @@ export async function getHomeSummary() {
 
   const recentItem =
     items.length > 0
-      ? items[items.length - 1]
+      ? items[0]
       : null;
 
   return {
