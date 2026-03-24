@@ -11,7 +11,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 
 import { fetchWardrobeItems } from "../../src/services/wardrobeService";
-import { getPreferences } from "../../src/services/userPreferencesService";
+import { getUserProfile } from "../../src/services/userService";
 import { auth } from "../../src/services/firebaseConfig";
 
 import ProfileSectionCard from "../../src/components/ProfileSectionCard";
@@ -37,7 +37,7 @@ export default function Profile() {
     const loadProfile = async () => {
       try {
         const user = auth.currentUser;
-        const preferences = await getPreferences();
+        const preferences = await getUserProfile();
 
         setProfile({
           name: user?.displayName || "User",
