@@ -8,10 +8,7 @@ import {
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import {
-  getPreferences,
-  savePreferences,
-} from "../src/services/userPreferencesService";
+import { getUserProfile, updateUserPreferences } from "../src/services/userService";
 
 const BODY_TYPES = ["Slim", "Athletic", "Average", "Heavy"];
 
@@ -49,7 +46,7 @@ export default function EditProfile() {
 
   useEffect(() => {
     const load = async () => {
-      const prefs = await getPreferences();
+      const prefs = await getUserProfile();
       setPreferences(prefs || {});
     };
     load();
@@ -81,8 +78,12 @@ export default function EditProfile() {
   };
 
   const handleSaveAll = async () => {
-    await savePreferences(preferences);
+    try{
+      await updateUserPreferences(preferences);
     router.back();
+    }catch (error){
+      console.log("Update error:",error)
+    }
   };
 
   const Row = ({ label, field }: any) => (
@@ -124,7 +125,7 @@ export default function EditProfile() {
         <TextInput
           style={styles.input}
           value={tempValue}
-          onChangeText={setTempValue}
+          onChangeText={(text) => setTempValue(Number(text))}
           keyboardType="numeric"
           placeholder="Enter height (cm)"
         />
