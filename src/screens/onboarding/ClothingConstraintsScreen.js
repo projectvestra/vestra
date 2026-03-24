@@ -4,9 +4,8 @@ import { useState } from 'react';
 import { useOnboarding } from '../../context/OnboardingContext';
 import {
   setOnboardingCompleted,
-  savePreferences
 } from '../../services/userPreferencesService';
-
+import { createUserProfile } from '../../services/userService';
 export default function ClothingConstraintsScreen() {
   const router = useRouter();
   const { preferences, updatePreferences } = useOnboarding();
@@ -38,7 +37,7 @@ export default function ClothingConstraintsScreen() {
       constraints: selectedConstraints
     };
 
-    await savePreferences(finalPreferences);
+    await createUserProfile(finalPreferences);
     await setOnboardingCompleted();
 
     router.replace('/tabs/home');
