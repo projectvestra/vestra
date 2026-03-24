@@ -10,8 +10,8 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { deleteWardrobeItem } from '../services/wardrobeService';
 
+import { deleteWardrobeItemCloud } from '../services/cloudWardrobeService';
 export default function WardrobeItemCard({ item, onDelete }) {
   const [visible, setVisible] = useState(false);
 
@@ -63,7 +63,7 @@ export default function WardrobeItemCard({ item, onDelete }) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            await deleteWardrobeItem(item.id);
+            await deleteWardrobeItemCloud(item.id);
             closeCard();
             if (onDelete) onDelete();
           },
