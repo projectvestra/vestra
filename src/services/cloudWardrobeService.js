@@ -1,6 +1,6 @@
 import { db } from './firebaseConfig';
 import { auth } from './firebaseConfig';
-
+import { deleteDoc, doc } from 'firebase/firestore';
 import {
   collection,
   addDoc,
@@ -66,6 +66,16 @@ export async function createWardrobeItem(item) {
   });
 
   return docRef.id;
+}
+/* ------------------------------------------
+   Delete Wardrobe Item
+------------------------------------------ */
+export async function deleteWardrobeItemCloud(itemId) {
+  try {
+    await deleteDoc(doc(db, 'wardrobe_items', itemId));
+  } catch (error) {
+    throw new Error('Failed to delete item');
+  }
 }
 
 /* ------------------------------------------
