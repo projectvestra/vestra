@@ -1,6 +1,4 @@
-import { db } from './firebaseConfig';
-import { auth } from './firebaseConfig';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { db, auth } from './firebaseConfig';
 import {
   collection,
   addDoc,
@@ -8,17 +6,23 @@ import {
   query,
   where,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  deleteDoc,
+  doc
 } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 🔥 CHANGE THESE
+const CACHE_KEY = 'vestra_wardrobe_cache';
+/* ------------------------------------------
+   Cloudinary Config
+------------------------------------------ */
 const CLOUD_NAME = "dzoy9fmv8";
 const UPLOAD_PRESET = "vestra_upload";
 
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
 /* ------------------------------------------
-   Upload Image to Cloudinary
+   Upload Image
 ------------------------------------------ */
 export async function uploadWardrobeImage(uri) {
   const formData = new FormData();
@@ -46,7 +50,7 @@ export async function uploadWardrobeImage(uri) {
 }
 
 /* ------------------------------------------
-   Create Firestore Item
+   Create Item
 ------------------------------------------ */
 export async function createWardrobeItem(item) {
   const user = auth.currentUser;
@@ -67,52 +71,77 @@ export async function createWardrobeItem(item) {
 
   return docRef.id;
 }
+
 /* ------------------------------------------
-   Delete Wardrobe Item
+   Delete Item
 ------------------------------------------ */
 export async function deleteWardrobeItemCloud(itemId) {
   try {
+    console.log("Deleting item ID:", itemId);
     await deleteDoc(doc(db, 'wardrobe_items', itemId));
   } catch (error) {
-    throw new Error('Failed to delete item');
+    console.log("Delete error:", error);
+    throw error;
   }
 }
 
 /* ------------------------------------------
-   Fetch User Items
+   Fetch Items
 ------------------------------------------ */
 export async function getUserWardrobeItems() {
   const user = auth.currentUser;
 
   if (!user) throw new Error('User not authenticated');
 
-  const q = query(
-    collection(db, 'wardrobe_items'),
-    where('userId', '==', user.uid),
-    orderBy('createdAt', 'desc')
-  );
+  try {
+    // 🔹 1. Try cache first
+    const cached = await AsyncStorage.getItem(CACHE_KEY);
+    if (cached) {
+      console.log("Loaded from cache");
+    }
 
-  const snapshot = await getDocs(q);
+    // 🔹 2. Fetch from Firestore
+    const q = query(
+      collection(db, 'wardrobe_items'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
 
-  const items = snapshot.docs.map(doc => {
-    // id: doc.id,
-    // ...doc.data(),
-    const data = doc.data();
+    const snapshot = await getDocs(q);
 
-  return {
-    id: doc.id,
-    image: data.imageUrl,         
-    name: data.clothingType,      
-    category: data.clothingType,
-    color: data.colorHex,
-    size: data.size,
-    fit: data.fit,
-  };
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
 
-  });
+      return {
+        id: doc.id,
+        image: data.imageUrl,
+        name: data.clothingType,
+        category: data.clothingType,
+        color: data.colorHex,
+        size: data.size,
+        fit: data.fit,
+      };
+    });
 
-  return {
-    totalCount: items.length,
-    items,
-  };
+    const result = {
+      totalCount: items.length,
+      items,
+    };
+
+    // 🔹 3. Update cache
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(result));
+
+    return result;
+
+  } catch (error) {
+    console.log("Firestore failed, using cache");
+
+    // 🔹 4. Fallback to cache
+    const cached = await AsyncStorage.getItem(CACHE_KEY);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    throw error;
+  }
 }
