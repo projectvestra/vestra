@@ -30,6 +30,15 @@ function isShoe(type) {
   return t?.includes("shoe") || t?.includes("sneaker");
 }
 
+function isAccessory(type) {
+  const t = normalize(type);
+  return (
+    t?.includes("accessory") ||
+    t?.includes("watch") ||
+    t?.includes("cap") ||
+    t?.includes("belt")
+  );
+}
 /* ------------------------------------------
    Color Compatibility
 ------------------------------------------ */
@@ -75,6 +84,7 @@ export async function generateOutfit() {
     const shirts = items.filter(i => isShirt(i.category));
     const pants = items.filter(i => isPant(i.category));
     const shoes = items.filter(i => isShoe(i.category));
+    const accessories = items.filter(i => isAccessory(i.category));
 
     if (!shirts.length || !pants.length || !shoes.length) {
       return null;
@@ -104,10 +114,14 @@ export async function generateOutfit() {
         isColorCompatible(selectedPants.color, s.color)
       ) || pickRandom(shoes);
 
+      const selectedAccessory =
+  accessories.length > 0 ? pickRandom(accessories) : null;
+
     return {
       shirt: selectedShirt,
       pants: selectedPants,
       shoes: selectedShoes,
+      accessory: selectedAccessory, 
       explanation: `Outfit generated based on your preferred colors and wardrobe.`,
     };
 
