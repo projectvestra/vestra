@@ -6,40 +6,54 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-
 import { getUserWardrobeItems } from '../../src/services/cloudWardrobeService';
 import WardrobeItemCard from '../../src/components/WardrobeItemCard';
+import StyleAssistantModal from '../../src/components/home/StyleAssistantModal';
 
 const CATEGORIES = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
 export default function Wardrobe() {
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [wardrobeData, setWardrobeData] = useState({
-    totalCount: 0,
-    items: [],
-  });
+  const [allItems, setAllItems] = useState([]);
+  const [showAssistant, setShowAssistant] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, [selectedCategory]);
+  }, []);
 
- const loadData = async () => {
-  try {
-    const data = await getUserWardrobeItems();
-    setWardrobeData(data);
-  } catch (error) {
-    console.log('Wardrobe fetch error:', error);
-  }
-};
+  const loadData = async () => {
+    try {
+      const data = await getUserWardrobeItems();
+      setAllItems(data.items || []);
+    } catch (error) {
+      console.log('Wardrobe fetch error:', error);
+    }
+  };
+
+  // Filter items based on selected category
+  const filteredItems = selectedCategory === 'All'
+    ? allItems
+    : allItems.filter(item => {
+        const cat = (item.category || item.name || '').toLowerCase();
+        const selected = selectedCategory.toLowerCase();
+        // Match singular and plural — "Shirts" matches "shirt", "shirts" etc
+        return cat.includes(selected.slice(0, -1)) || cat === selected.toLowerCase();
+      });
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Wardrobe</Text>
+      <Text style={styles.subtitle}>{allItems.length} items</Text>
 
-      <Text style={styles.subtitle}>
-        {wardrobeData.totalCount} items
-      </Text>
+      {/* Generate Outfit Button */}
+      <TouchableOpacity
+        style={styles.generateBtn}
+        onPress={() => setShowAssistant(true)}
+      >
+        <Text style={styles.generateBtnText}>✦ Generate Outfit</Text>
+      </TouchableOpacity>
 
+      {/* Category Filter */}
       <View style={styles.categories}>
         {CATEGORIES.map((category) => (
           <TouchableOpacity
@@ -50,37 +64,50 @@ export default function Wardrobe() {
               selectedCategory === category && styles.activeCategory,
             ]}
           >
-            <Text
-              style={[
-                styles.categoryText,
-                selectedCategory === category && styles.activeCategoryText,
-              ]}
-            >
+            <Text style={[
+              styles.categoryText,
+              selectedCategory === category && styles.activeCategoryText,
+            ]}>
               {category}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {wardrobeData.items.length === 0 ? (
+      {/* Item count for current filter */}
+      {selectedCategory !== 'All' && (
+        <Text style={styles.filterCount}>
+          {filteredItems.length} {selectedCategory.toLowerCase()}
+        </Text>
+      )}
+
+      {/* Item List */}
+      {filteredItems.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>
-            No items in this category yet
+            {selectedCategory === 'All'
+              ? 'No items yet — tap + to add clothes'
+              : `No ${selectedCategory.toLowerCase()} yet`}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={wardrobeData.items}
+          data={filteredItems}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          contentContainerStyle = {styles.list}
+          contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <WardrobeItemCard item={item}
-            onDelete={loadData}
-            />
+            <WardrobeItemCard item={item} onDelete={loadData} onEdit={loadData} />
           )}
         />
       )}
+
+      {/* Style Assistant Modal */}
+      <StyleAssistantModal
+        visible={showAssistant}
+        onClose={() => setShowAssistant(false)}
+        wardrobe={allItems}
+      />
     </View>
   );
 }
@@ -102,10 +129,24 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  generateBtn: {
+    backgroundColor: '#000',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  generateBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
   categories: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 16,
   },
   category: {
     paddingVertical: 6,
@@ -123,6 +164,11 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '600',
   },
+  filterCount: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 8,
+  },
   list: {
     paddingTop: 16,
     paddingBottom: 32,
@@ -135,5 +181,6 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#999',
     fontSize: 14,
+    textAlign: 'center',
   },
 });

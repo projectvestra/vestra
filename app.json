@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "newsApiKey": "aaf75385d0334c189ae57c2bea65ba0a"
+      "newsApiKey": "aaf75385d0334c189ae57c2bea65ba0a",
+      "router": {},
+      "eas": {
+        "projectId": "4361b3f6-e7c3-4c5b-b63a-391242df5439"
+      }
     },
     "ios": {
       "supportsTablet": true
@@ -43,12 +47,12 @@
             "backgroundColor": "#000000"
           }
         }
-      ],
-      "expo-web-browser"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "owner": "areyoukaran"
   }
 }

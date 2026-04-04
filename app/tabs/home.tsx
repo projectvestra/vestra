@@ -19,12 +19,14 @@ import GreetingSection from '../../src/components/home/GreetingSection';
 import TodayOutfitCard from '../../src/components/home/TodayOutfitCard';
 import QuickActionCard from '../../src/components/home/QuickActionCard';
 import WeeklyPreview from '../../src/components/home/WeeklyPreview';
+import StyleAssistantModal from '../../src/components/home/StyleAssistantModal';
 
 import {
   getHomeSummary,
   getTodayOutfit,
   getWeeklyPreview,
 } from '../../src/services/homeService';
+import { getUserWardrobeItems } from '../../src/services/cloudWardrobeService';
 
 import { useRouter } from 'expo-router';
 
@@ -32,36 +34,37 @@ export default function Home() {
   const router = useRouter();
 
   const [summary, setSummary] = useState<{
-  totalItems: number;
-  recentItem: WardrobeItem | null;
-}>({
-  totalItems: 0,
-  recentItem: null,
-});
+    totalItems: number;
+    recentItem: WardrobeItem | null;
+  }>({
+    totalItems: 0,
+    recentItem: null,
+  });
 
   const [outfit, setOutfit] = useState({});
- const [weekly, setWeekly] = useState<
-  { day: string; tag: string }[]
->([]);
-
+  const [weekly, setWeekly] = useState<{ day: string; tag: string }[]>([]);
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-  try {
-    const summaryData = await getHomeSummary();
-    const outfitData = await getTodayOutfit();
-    const weeklyData = await getWeeklyPreview();
+    try {
+      const summaryData = await getHomeSummary();
+      const outfitData = await getTodayOutfit();
+      const weeklyData = await getWeeklyPreview();
+      const wardrobeData = await getUserWardrobeItems();
 
-    setSummary(summaryData);
-    setOutfit(outfitData);
-    setWeekly(weeklyData);
-  } catch (error) {
-    console.log('Home load error:', error);
-  }
-};
+      setSummary(summaryData);
+      setOutfit(outfitData);
+      setWeekly(weeklyData);
+      setWardrobeItems(wardrobeData?.items || []);
+    } catch (error) {
+      console.log('Home load error:', error);
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -74,6 +77,11 @@ export default function Home() {
       <TodayOutfitCard outfit={outfit} />
 
       <View style={{ marginTop: 24 }}>
+        {/* NEW — Style Assistant button */}
+        <QuickActionCard
+          title="✦ Style Assistant — Generate Outfit"
+          onPress={() => setShowAssistant(true)}
+        />
         <QuickActionCard
           title="Plan Weekly Outfits"
           onPress={() => router.push('./planner')}
@@ -89,6 +97,13 @@ export default function Home() {
       </View>
 
       <WeeklyPreview weeklyData={weekly} />
+
+      {/* Style Assistant Modal */}
+      <StyleAssistantModal
+        visible={showAssistant}
+        onClose={() => setShowAssistant(false)}
+        wardrobe={wardrobeItems}
+      />
     </ScrollView>
   );
 }

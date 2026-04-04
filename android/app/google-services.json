@@ -1,73 +1,26 @@
 {
   "project_info": {
-    "project_number": "932250453995",
-    "project_id": "vestra-101",
-    "storage_bucket": "vestra-101.firebasestorage.app"
+    "project_number": "219404516716",
+    "project_id": "vestra-c26ea",
+    "storage_bucket": "vestra-c26ea.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:932250453995:android:3ad0cfddaaf1bccd997bae",
+        "mobilesdk_app_id": "1:219404516716:android:6538d12b5b6f605e484749",
         "android_client_info": {
           "package_name": "com.anonymous.vestra"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "932250453995-t40gev2cegr19dskc7qr92t77oh4nkqi.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.anonymous.vestra",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
-        {
-          "client_id": "932250453995-ls9kj2m6ga2b0c3v9ov0edan3js81nn9.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCJYXBQStB0gSzkCLU7DTCYlHoZsuZNxco"
+          "current_key": "AIzaSyBTZP-0lZZGrOBeKOEBn_AorxL9wU2JZ24"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "932250453995-ls9kj2m6ga2b0c3v9ov0edan3js81nn9.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:932250453995:android:e11befd810c7d0fe997bae",
-        "android_client_info": {
-          "package_name": "com.arnav.vestra"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "932250453995-ls9kj2m6ga2b0c3v9ov0edan3js81nn9.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCJYXBQStB0gSzkCLU7DTCYlHoZsuZNxco"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "932250453995-ls9kj2m6ga2b0c3v9ov0edan3js81nn9.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
