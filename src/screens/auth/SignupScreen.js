@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { registerWithEmail } from '../../services/authService';
@@ -76,14 +77,28 @@ export default function SignupScreen() {
         onChangeText={setPassword}
       />
 
+      <Text style={styles.infoText}>
+        💡 You can set a unique username after completing onboarding
+      </Text>
+
       <TouchableOpacity
         style={styles.primaryButton}
         onPress={handleSignup}
+        disabled={loading}
       >
-        <Text style={styles.primaryButtonText}>
-          {loading ? 'Creating...' : 'Sign Up'}
-        </Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.primaryButtonText}>Sign Up</Text>
+        )}
       </TouchableOpacity>
+
+      <Text
+        style={styles.footerText}
+        onPress={() => router.push('/auth/login')}
+      >
+        Already have an account? Login
+      </Text>
     </View>
   );
 }
@@ -113,6 +128,13 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     backgroundColor: '#fff',
   },
+  infoText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
   primaryButton: {
     backgroundColor: Colors.light.tint,
     paddingVertical: 16,
@@ -123,6 +145,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     fontSize: 16,
+    fontWeight: '500',
+  },
+  footerText: {
+    marginTop: 20,
+    textAlign: 'center',
+    color: Colors.light.tint,
+    fontSize: 14,
     fontWeight: '500',
   },
   error: {

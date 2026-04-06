@@ -4,25 +4,33 @@ import {
   TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { loginWithEmail, loginWithGoogle } from '../../src/services/authService';
+import { loginWithEmail, loginWithUsername, loginWithGoogle } from '../../src/services/authService';
 import { Colors } from '../../constants/theme';
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [input, setInput] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginMode, setLoginMode] = useState('email'); // 'email' or 'username'
 
   const handleLogin = async () => {
     setError('');
-    if (!email || !password) {
-      setError('Email and password are required.');
+    if (!input || !password) {
+      setError(`${loginMode === 'email' ? 'Email' : 'Username'} and password are required.`);
       return;
     }
     setLoading(true);
-    const result = await loginWithEmail(email, password);
+    
+    let result;
+    if (loginMode === 'email') {
+      result = await loginWithEmail(input, password);
+    } else {
+      result = await loginWithUsername(input, password);
+    }
+    
     if (!result.success) {
       setError(result.message);
       setLoading(false);
@@ -47,14 +55,60 @@ export default function Login() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
+      {/* Login Mode Toggle */}
+      <View style={styles.toggleContainer}>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            loginMode === 'email' && styles.toggleButtonActive,
+          ]}
+          onPress={() => {
+            setLoginMode('email');
+            setInput('');
+            setError('');
+          }}
+        >
+          <Text
+            style={[
+              styles.toggleText,
+              loginMode === 'email' && styles.toggleTextActive,
+            ]}
+          >
+            Email
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            loginMode === 'username' && styles.toggleButtonActive,
+          ]}
+          onPress={() => {
+            setLoginMode('username');
+            setInput('');
+            setError('');
+          }}
+        >
+          <Text
+            style={[
+              styles.toggleText,
+              loginMode === 'username' && styles.toggleTextActive,
+            ]}
+          >
+            Username
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Input Field - Email or Username */}
       <TextInput
-        placeholder="Email"
+        placeholder={loginMode === 'email' ? 'Email' : 'Username'}
         placeholderTextColor="#999"
-        autoCapitalize="none"
-        keyboardType="email-address"
+        autoCapitalize={loginMode === 'email' ? 'none' : 'none'}
+        keyboardType={loginMode === 'email' ? 'email-address' : 'default'}
         style={styles.input}
-        value={email}
-        onChangeText={setEmail}
+        value={input}
+        onChangeText={setInput}
       />
 
       {/* Password field with eye toggle */}
@@ -110,9 +164,33 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 24,
     fontWeight: '600',
-    marginBottom: 32,
+    marginBottom: 24,
     textAlign: 'center',
     color: Colors.light.text,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    padding: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: Colors.light.tint,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  toggleTextActive: {
+    color: '#fff',
   },
   input: {
     borderWidth: 1,

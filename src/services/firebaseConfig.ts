@@ -8,6 +8,9 @@ import {
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// @ts-ignore
+import { getReactNativePersistence } from 'firebase/auth';
 
 const expoExtra = Constants.expoConfig?.extra || {};
 const firebaseExtra = expoExtra.firebase || {};
@@ -40,7 +43,10 @@ if (Platform.OS === 'web') {
     persistence: browserLocalPersistence,
   });
 } else {
-  auth = getAuth(app);
+  // Use AsyncStorage for persistence on native platforms (iOS/Android)
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
 }
 
 const db = getFirestore(app);
