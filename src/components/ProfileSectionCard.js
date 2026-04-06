@@ -1,11 +1,13 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ProfileSectionCard({ title, children }) {
+  const { theme } = useTheme();
+
   return (
     <View style={styles.wrapper}>
-      {title && <Text style={styles.title}>{title}</Text>}
-      <View style={styles.card}>{children}</View>
+      {title && <Text style={[styles.title, { color: theme.icon }]}>{title}</Text>}
+      <View style={[styles.card, { backgroundColor: theme.bg2 }]}>{children}</View>
     </View>
   );
 }
@@ -17,11 +19,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.icon,
     marginBottom: 8,
   },
   card: {
-    backgroundColor: '#f8f8f8',
     borderRadius: 16,
     padding: 16,
   },

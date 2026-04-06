@@ -1,48 +1,25 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Modal } from 'react-native';
 import { useState } from 'react';
-import { useRouter } from 'expo-router';
-import OutfitPreview from '../OutfitPreview';
 
 export default function TodayOutfitCard({ outfit }) {
   const [visible, setVisible] = useState(false);
-  const router = useRouter();
-
-  if (!outfit || Object.keys(outfit).length === 0) {
-  return null;
-}
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Today's Outfit</Text>
 
-      {/* 🔥 New 2D Outfit Preview */}
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() =>
-          router.push({
-            pathname: '/outfit-preview',
-            params: { outfit: JSON.stringify(outfit) },
-          })
-        }
-      >
-        <OutfitPreview
-          outfit={outfit}
-          onItemPress={(item) =>
-            router.push({
-              pathname: '/tabs/wardrobe',
-              params: { highlightId: item.id },
-            })
-          }
-        />
-      </TouchableOpacity>
+      <View style={styles.row}>
+        {outfit.shirt && (
+          <Image source={{ uri: outfit.shirt.image }} style={styles.image} />
+        )}
+        {outfit.pants && (
+          <Image source={{ uri: outfit.pants.image }} style={styles.image} />
+        )}
+        {outfit.shoes && (
+          <Image source={{ uri: outfit.shoes.image }} style={styles.image} />
+        )}
+      </View>
 
-      {/* Explanation Button (unchanged) */}
       <TouchableOpacity
         style={styles.button}
         onPress={() => setVisible(true)}
@@ -50,12 +27,10 @@ export default function TodayOutfitCard({ outfit }) {
         <Text style={{ color: '#fff' }}>Why this outfit?</Text>
       </TouchableOpacity>
 
-      {/* Modal (unchanged) */}
       <Modal visible={visible} transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text>{outfit.explanation}</Text>
-
             <TouchableOpacity
               style={styles.closeBtn}
               onPress={() => setVisible(false)}
@@ -80,6 +55,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  image: {
+    width: 90,
+    height: 120,
+    borderRadius: 10,
   },
   button: {
     marginTop: 16,

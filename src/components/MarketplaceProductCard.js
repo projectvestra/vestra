@@ -1,7 +1,9 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function MarketplaceProductCard({ product }) {
+  const { theme } = useTheme();
+
   const handleBuyNow = () => {
     if (product.affiliateUrl) {
       Linking.openURL(product.affiliateUrl);
@@ -9,24 +11,24 @@ export default function MarketplaceProductCard({ product }) {
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.bg2 }]}> 
       <Image source={{ uri: product.imageUrl }} style={styles.image} />
 
       <View style={styles.content}>
-        <Text style={styles.brand}>{product.brand}</Text>
-        <Text style={styles.name} numberOfLines={2}>
+        <Text style={[styles.brand, { color: theme.icon }]}>{product.brand}</Text>
+        <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>
           {product.name}
         </Text>
 
-        <Text style={styles.description} numberOfLines={2}>
+        <Text style={[styles.description, { color: theme.icon }]} numberOfLines={2}>
           {product.description}
         </Text>
 
-        <Text style={styles.price}>
+        <Text style={[styles.price, { color: theme.text }]}> 
           {product.currency}{product.price}
         </Text>
 
-        <TouchableOpacity style={styles.button} onPress={handleBuyNow}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.tint }]} onPress={handleBuyNow}>
           <Text style={styles.buttonText}>Buy Now</Text>
         </TouchableOpacity>
       </View>
@@ -37,7 +39,6 @@ export default function MarketplaceProductCard({ product }) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
     borderRadius: 16,
     margin: 6,
     overflow: 'hidden',
@@ -51,28 +52,23 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontSize: 12,
-    color: Colors.light.icon,
     marginBottom: 4,
   },
   name: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   description: {
     fontSize: 12,
-    color: Colors.light.icon,
     marginTop: 6,
   },
   price: {
     marginTop: 8,
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   button: {
     marginTop: 10,
-    backgroundColor: Colors.light.tint,
     paddingVertical: 8,
     borderRadius: 10,
     alignItems: 'center',
