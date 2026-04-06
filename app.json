@@ -9,7 +9,16 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "newsApiKey": "aaf75385d0334c189ae57c2bea65ba0a"
+      "newsApiKey": "aaf75385d0334c189ae57c2bea65ba0a",
+      "firebase": {
+        "apiKey": "AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "authDomain": "vestra-xxxxx.firebaseapp.com",
+        "projectId": "vestra-xxxxx",
+        "storageBucket": "vestra-xxxxx.appspot.com",
+        "messagingSenderId": "123456789012",
+        "appId": "1:123456789012:web:xxxxxxxxxxxxxx"
+      },
+      "googleClientId": "123456789012-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
     },
     "ios": {
       "supportsTablet": true

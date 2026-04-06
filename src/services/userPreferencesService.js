@@ -57,6 +57,8 @@
 //   }
 // }
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth, db } from './firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
 
 const ONBOARDING_KEY = 'vestra_onboarding_completed';
 
@@ -107,6 +109,14 @@ export async function setOnboardingCompleted() {
 ------------------------------------------ */
 export async function isOnboardingCompleted() {
   try {
+    const user = auth.currentUser;
+    if (user) {
+      const profileSnap = await getDoc(doc(db, 'user_profiles', user.uid));
+      if (profileSnap.exists()) {
+        return true;
+      }
+    }
+
     const value = await AsyncStorage.getItem(ONBOARDING_KEY);
     return value === 'true';
   } catch {
