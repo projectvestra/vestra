@@ -1,11 +1,13 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ProfileStatCard({ value, label }) {
+  const { theme } = useTheme();
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.value}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
+    <View style={[styles.card, { backgroundColor: theme.bg2 }]}> 
+      <Text style={[styles.value, { color: theme.text }]}>{value}</Text>
+      <Text style={[styles.label, { color: theme.icon }]}>{label}</Text>
     </View>
   );
 }
@@ -13,7 +15,6 @@ export default function ProfileStatCard({ value, label }) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -22,11 +23,9 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   label: {
     fontSize: 12,
-    color: Colors.light.icon,
     marginTop: 4,
   },
 });

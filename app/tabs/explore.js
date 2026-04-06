@@ -12,11 +12,15 @@ import {
 } from 'react-native';
 
 import { fetchFashionTrends } from '../../src/services/fashionService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function Explore() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   useEffect(() => {
     loadData();
@@ -48,27 +52,27 @@ export default function Explore() {
     }
 
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.card }]}> 
         {item.image ? (
           <Image source={{ uri: item.image }} style={styles.image} />
         ) : (
-          <View style={styles.placeholder} />
+          <View style={[styles.placeholder, { backgroundColor: theme.bg2 }]} />
         )}
 
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
           {item.title}
         </Text>
 
-        <Text style={styles.description} numberOfLines={2}>
+        <Text style={[styles.description, { color: theme.text2 }]} numberOfLines={2}>
           {item.description}
         </Text>
 
-        <Text style={styles.meta}>
+        <Text style={[styles.meta, { color: theme.icon }] }>
           {item.source} - {formattedDate}
         </Text>
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: theme.tint }]}
           onPress={() => {
             if (item.url) {
               Linking.openURL(item.url);
@@ -82,8 +86,8 @@ export default function Explore() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Fashion Trends</Text>
+    <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }] }>
+      <Text style={[styles.header, { color: theme.text }]}>Fashion Trends</Text>
 
       {loading && (
         <View style={styles.loader}>
@@ -142,22 +146,19 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 12,
     marginBottom: 12,
-    backgroundColor: '#dddddd',
+    backgroundColor: '#777',
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111',
   },
   description: {
     marginTop: 6,
     fontSize: 14,
-    color: '#555',
   },
   meta: {
     marginTop: 8,
     fontSize: 12,
-    color: '#777',
   },
   button: {
     marginTop: 12,

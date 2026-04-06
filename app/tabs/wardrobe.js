@@ -9,13 +9,28 @@ import {
 import { getUserWardrobeItems } from '../../src/services/cloudWardrobeService';
 import WardrobeItemCard from '../../src/components/WardrobeItemCard';
 import StyleAssistantModal from '../../src/components/home/StyleAssistantModal';
+import { useTheme } from '../../src/context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const CATEGORIES = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
+const CATEGORIES = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories', 'Jackets', 'Hoodies', 'Sunglasses'];
+
+const CATEGORY_MAP = {
+  Shirts: ['shirt', 'top', 'blouse', 't-shirt'],
+  Pants: ['pant', 'jean', 'trouser', 'chino', 'short', 'skirt'],
+  Shoes: ['shoe', 'sneaker', 'boot', 'sandal', 'loafer'],
+  Accessories: ['bag', 'belt', 'scarf', 'hat', 'watch', 'jewelry', 'bag'],
+  Jackets: ['jacket', 'coat', 'blazer', 'parka'],
+  Hoodies: ['hoodie', 'sweater', 'crewneck'],
+  Sunglasses: ['sunglass', 'sunny', 'shades'],
+};
 
 export default function Wardrobe() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [allItems, setAllItems] = useState([]);
   const [showAssistant, setShowAssistant] = useState(false);
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+
 
   useEffect(() => {
     loadData();
@@ -35,22 +50,21 @@ export default function Wardrobe() {
     ? allItems
     : allItems.filter(item => {
         const cat = (item.category || item.name || '').toLowerCase();
-        const selected = selectedCategory.toLowerCase();
-        // Match singular and plural — "Shirts" matches "shirt", "shirts" etc
-        return cat.includes(selected.slice(0, -1)) || cat === selected.toLowerCase();
+        const matchers = CATEGORY_MAP[selectedCategory] || [selectedCategory.toLowerCase()];
+        return matchers.some(term => cat.includes(term));
       });
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>My Wardrobe</Text>
-      <Text style={styles.subtitle}>{allItems.length} items</Text>
+    <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top}]}>
+      <Text style={[styles.title, { color: theme.text }]}>My Wardrobe</Text>
+      <Text style={[styles.subtitle, { color: theme.text2 }]}>{allItems.length} items</Text>
 
       {/* Generate Outfit Button */}
       <TouchableOpacity
-        style={styles.generateBtn}
+        style={[styles.generateBtn, { backgroundColor: theme.tint }]}
         onPress={() => setShowAssistant(true)}
       >
-        <Text style={styles.generateBtnText}>✦ Generate Outfit</Text>
+        <Text style={[styles.generateBtnText, { color: theme.bg }]}>✦ Generate Outfit</Text>
       </TouchableOpacity>
 
       {/* Category Filter */}
@@ -61,11 +75,12 @@ export default function Wardrobe() {
             onPress={() => setSelectedCategory(category)}
             style={[
               styles.category,
-              selectedCategory === category && styles.activeCategory,
+              selectedCategory === category && [styles.activeCategory, { borderBottomColor: theme.tint }],
             ]}
           >
             <Text style={[
               styles.categoryText,
+              { color: selectedCategory === category ? theme.tint : theme.text2 },
               selectedCategory === category && styles.activeCategoryText,
             ]}>
               {category}
@@ -76,7 +91,7 @@ export default function Wardrobe() {
 
       {/* Item count for current filter */}
       {selectedCategory !== 'All' && (
-        <Text style={styles.filterCount}>
+        <Text style={[styles.filterCount, { color: theme.text2 }]}>
           {filteredItems.length} {selectedCategory.toLowerCase()}
         </Text>
       )}
@@ -115,22 +130,18 @@ export default function Wardrobe() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     paddingHorizontal: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: '600',
     marginTop: 16,
-    color: '#111',
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
     marginTop: 4,
   },
   generateBtn: {
-    backgroundColor: '#000',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -138,7 +149,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   generateBtnText: {
-    color: '#fff',
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -154,19 +164,15 @@ const styles = StyleSheet.create({
   },
   activeCategory: {
     borderBottomWidth: 2,
-    borderBottomColor: '#000',
   },
   categoryText: {
     fontSize: 13,
-    color: '#777',
   },
   activeCategoryText: {
-    color: '#000',
     fontWeight: '600',
   },
   filterCount: {
     fontSize: 12,
-    color: '#999',
     marginTop: 8,
   },
   list: {
@@ -179,7 +185,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    color: '#999',
     fontSize: 14,
     textAlign: 'center',
   },

@@ -12,6 +12,7 @@ import {
 import { getUserWardrobeItems } from '../../services/cloudWardrobeService';
 import { getRecommendations, getItemCategory } from '../../services/recommendationService';
 import { searchProductsOnline } from '../../services/shopSearchService';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width: W } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 80;
@@ -73,7 +74,11 @@ function isWinterItem(item) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+/**
+ * @param {{visible:boolean,onClose:()=>void,wardrobe?:any[]}} props
+ */
 export default function StyleAssistantModal({ visible, onClose, wardrobe = [] }) {
+  const { theme } = useTheme();
   const [tab, setTab] = useState('swipe');
   const [outfits, setOutfits] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -246,17 +251,17 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={s.container}>
+      <View style={[s.container, { backgroundColor: theme.bg }]}>
 
         {/* Header */}
-        <View style={s.header}>
+        <View style={[s.header, { borderBottomColor: theme.bg2 }]}>
           <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-            <Text style={s.closeText}>✕</Text>
+            <Text style={[s.closeText, { color: theme.text2 }]}>✕</Text>
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Style Assistant</Text>
+          <Text style={[s.headerTitle, { color: theme.text }]}>Style Assistant</Text>
           {/* Winter mode toggle */}
           <View style={s.winterToggle}>
-            <Text style={s.winterLabel}>❄</Text>
+            <Text style={[s.winterLabel, { color: theme.text2 }]}>❄</Text>
             <Switch
               value={winterMode}
               onValueChange={setWinterMode}
@@ -306,15 +311,15 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
             {loading ? (
               <ActivityIndicator size="large" color="#000" style={{ marginTop: 60 }} />
             ) : outfits.length === 0 ? (
-              <TouchableOpacity style={s.generateBtn} onPress={loadOutfits}>
-                <Text style={s.generateBtnText}>Generate Outfits →</Text>
+              <TouchableOpacity style={[s.generateBtn, { backgroundColor: theme.tint }]} onPress={loadOutfits}>
+                <Text style={[s.generateBtnText, { color: theme.bg }]}>Generate Outfits →</Text>
               </TouchableOpacity>
             ) : currentIdx >= outfits.length ? (
               <View style={s.doneBox}>
-                <Text style={s.doneText}>All outfits reviewed!</Text>
+                <Text style={[s.doneText, { color: theme.text2 }]}>All outfits reviewed!</Text>
                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-                  <TouchableOpacity style={[s.generateBtn, { flex: 1 }]} onPress={loadOutfits}>
-                    <Text style={s.generateBtnText}>Regenerate</Text>
+                  <TouchableOpacity style={[s.generateBtn, { flex: 1, backgroundColor: theme.tint }]} onPress={loadOutfits}>
+                    <Text style={[s.generateBtnText, { color: theme.bg }]}>Regenerate</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[s.generateBtn, { flex: 1, backgroundColor: '#8b5cf6' }]} onPress={() => setTab('saved')}>
                     <Text style={s.generateBtnText}>View Saved</Text>
@@ -324,7 +329,7 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
             ) : (
               <>
                 <Animated.View
-                  style={[s.card, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] }]}
+                  style={[s.card, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }], backgroundColor: theme.card }]}
                   {...panResponder.panHandlers}
                 >
                   <Animated.Text style={[s.hintLike, { opacity: likeOpacity }]}>SAVE</Animated.Text>
@@ -348,8 +353,8 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
                             </Text>
                           </View>
                         )}
-                        <Text style={s.itemLabel}>{label}</Text>
-                        <Text style={s.itemName} numberOfLines={1}>{data?.name || data?.category || label}</Text>
+                        <Text style={[s.itemLabel, { color: theme.text2 }]}>{label}</Text>
+                        <Text style={[s.itemName, { color: theme.text }]} numberOfLines={1}>{data?.name || data?.category || label}</Text>
                       </View>
                     ))}
                   </View>
@@ -362,19 +367,19 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
                         { label: 'Occasion',  val: currentOutfit.score.occasion,  color: '#3b82f6' },
                       ].map(bar => (
                         <View key={bar.label} style={s.scoreRow}>
-                          <Text style={s.scoreLabel}>{bar.label}</Text>
+                          <Text style={[s.scoreLabel, { color: theme.text2 }]}>{bar.label}</Text>
                           <View style={s.scoreBg}>
                             <View style={[s.scoreFill, { width: `${(bar.val || 0) * 10}%`, backgroundColor: bar.color }]} />
                           </View>
-                          <Text style={s.scoreVal}>{bar.val?.toFixed(1)}</Text>
+                          <Text style={[s.scoreVal, { color: theme.text2 }]}>{bar.val?.toFixed(1)}</Text>
                         </View>
                       ))}
-                      <Text style={s.totalScore}>Overall: {currentOutfit.score.total?.toFixed(1)}/10</Text>
+                      <Text style={[s.totalScore, { color: theme.text }]}>Overall: {currentOutfit.score.total?.toFixed(1)}/10</Text>
                     </View>
                   )}
 
-                  <TouchableOpacity style={s.shopBtn} onPress={() => handleShopOutfit(currentOutfit)}>
-                    <Text style={s.shopBtnText}>Shop this look →</Text>
+                  <TouchableOpacity style={[s.shopBtn, { backgroundColor: theme.tint }]} onPress={() => handleShopOutfit(currentOutfit)}>
+                    <Text style={[s.shopBtnText, { color: theme.bg }]}>Shop this look →</Text>
                   </TouchableOpacity>
                 </Animated.View>
 
@@ -384,23 +389,23 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
                     <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#fff0f0' }]} onPress={() => doSwipe('left')}>
                       <Text style={{ fontSize: 24, color: '#ef4444' }}>✕</Text>
                     </TouchableOpacity>
-                    <Text style={s.btnLabel}>Discard</Text>
+                    <Text style={[s.btnLabel, { color: theme.text2 }]}>Discard</Text>
                   </View>
                   <View style={{ alignItems: 'center' }}>
                     <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#fffbeb', width: 52, height: 52 }]} onPress={() => doSwipe('up')}>
                       <Text style={{ fontSize: 20, color: '#f59e0b' }}>★</Text>
                     </TouchableOpacity>
-                    <Text style={s.btnLabel}>Favourite</Text>
+                    <Text style={[s.btnLabel, { color: theme.text2 }]}>Favourite</Text>
                   </View>
                   <View style={{ alignItems: 'center' }}>
                     <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#f0fff0', width: 68, height: 68 }]} onPress={() => doSwipe('right')}>
                       <Text style={{ fontSize: 26, color: '#22c55e' }}>♥</Text>
                     </TouchableOpacity>
-                    <Text style={s.btnLabel}>Save</Text>
+                    <Text style={[s.btnLabel, { color: theme.text2 }]}>Save</Text>
                   </View>
                 </View>
 
-                <Text style={s.swipeHint}>{currentIdx + 1} of {outfits.length} outfits</Text>
+                <Text style={[s.swipeHint, { color: theme.text2 }]}>{currentIdx + 1} of {outfits.length} outfits</Text>
               </>
             )}
           </ScrollView>

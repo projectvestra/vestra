@@ -3,7 +3,7 @@ import { getUserWardrobeItems } from './cloudWardrobeService';
 
 // Your PC's IP — run ipconfig to find it
 // Must be on same WiFi as phone
-const API_BASE = 'http://192.168.1.100:8000';
+const API_BASE = 'http://192.168.1.4:8000';
 
 const COLOR_HARMONY = {
   white:   { black:9, navy:9, grey:9, beige:8, tan:8, brown:7, white:4 },
@@ -152,10 +152,27 @@ export async function getRecommendations({
 
   } catch (e) {
     // Backend not running — fall back to local scoring
-    console.log('Backend offline, using local scoring');
     const outfits = generateCombinations(wardrobe, occasion, temperatureC, lockedTop, lockedBottom, lockedShoes);
     return { outfits, source: 'local' };
   }
 }
 
 export { getItemCategory, getColor };
+
+export async function getAIWeeklyPlan(wardrobe, occasions) {
+  try {
+    const formData = new FormData();
+    formData.append('wardrobe_json', JSON.stringify(wardrobe));
+    formData.append('occasions_json', JSON.stringify(occasions));
+
+    const res = await fetch(`${API_BASE}/weekly-plan`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.log('AI weekly plan error, using local:', e);
+    return null;
+  }
+} 

@@ -1,5 +1,7 @@
 import { getUserWardrobeItems } from './cloudWardrobeService';
 import { generateOutfit } from "./outfitService";
+import { db, auth } from './firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
 /* ------------------------------------------
    Home Summary
 ------------------------------------------ */
@@ -54,13 +56,40 @@ export async function getTodayOutfit() {
 }
 
 /* ------------------------------------------
-   Weekly Preview (Mock)
+   Weekly Preview
 ------------------------------------------ */
 export async function getWeeklyPreview() {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const user = auth.currentUser;
+  if (!user) return { weeklyData: [], planData: {} };
 
-  return days.map((day, index) => ({
-    day,
-    tag: index % 2 === 0 ? 'Casual' : 'Smart',
-  }));
+  try {
+    const snap = await getDoc(doc(db, 'weekly_plans', user.uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      const occasions = data.occasions || {};
+      const plan = data.plan || {};
+
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const fullDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+      const weeklyData = days.map((day, idx) => ({
+        day,
+        tag: occasions[fullDays[idx]] || 'casual',
+      }));
+
+      return { weeklyData, planData: plan };
+    }
+  } catch (e) {
+    console.log('Weekly preview error:', e);
+  }
+
+  // Fallback to mock
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return {
+    weeklyData: days.map((day, index) => ({
+      day,
+      tag: index % 2 === 0 ? 'casual' : 'smart-casual',
+    })),
+    planData: {}
+  };
 }

@@ -1,65 +1,44 @@
-import { db, auth } from './firebaseConfig';
-import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { auth, db } from './firebaseConfig';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-/* ------------------------------------------
-   Create User Profile (after onboarding)
------------------------------------------- */
-export async function createUserProfile(preferences) {
-  const user = auth.currentUser;
-
-  if (!user) throw new Error('User not authenticated');
-
-  const userRef = doc(db, 'users', user.uid);
-
-  await setDoc(userRef, {
-    userId: user.uid,
-    name: user.displayName || 'User',
-    email: user.email || '',
-
-    // onboarding data
-    styles: preferences.styles || [],
-    preferredColors: preferences.preferredColors || [],
-    bodyType: preferences.bodyType || '',
-    height: preferences.height || null,
-    constraints: preferences.constraints || [],
-
-    createdAt: serverTimestamp(),
-  });
-
-  return true;
-}
-
-/* ------------------------------------------
-   Get User Profile
------------------------------------------- */
 export async function getUserProfile() {
   const user = auth.currentUser;
+  if (!user) return null;
 
-  if (!user) throw new Error('User not authenticated');
-
-  const docRef = doc(db, 'users', user.uid);
-  const snapshot = await getDoc(docRef);
-
-  if (!snapshot.exists()) return null;
-
-  return snapshot.data();
+  try {
+    const snap = await getDoc(doc(db, 'user_profiles', user.uid));
+    if (snap.exists()) {
+      return snap.data();
+    }
+    return null;
+  } catch (e) {
+    console.log('getUserProfile error:', e);
+    return null;
+  }
 }
 
-/* ------------------------------------------
-   Update Preferences
------------------------------------------- */
-export async function updateUserPreferences(updates) {
+export async function updateUserProfile(data) {
   const user = auth.currentUser;
+  if (!user) return null;
 
-  if (!user) throw new Error('User not authenticated');
+  try {
+    await setDoc(doc(db, 'user_profiles', user.uid), data, { merge: true });
+    return true;
+  } catch (e) {
+    console.log('updateUserProfile error:', e);
+    return false;
+  }
+}
 
-  const userRef = doc(db, 'users', user.uid);
+export async function createUserProfile(preferences) {
+  const user = auth.currentUser;
+  if (!user) return null;
 
-  await updateDoc(userRef, updates);
+  try {
+    await setDoc(doc(db, 'user_profiles', user.uid), preferences);
+    return true;
+  } catch (e) {
+    console.log('createUserProfile error:', e);
+    return false;
+  }
 }
