@@ -8,6 +8,7 @@ import { getUserProfile, updateUserProfile } from "../../src/services/userServic
 import { auth } from "../../src/services/firebaseConfig";
 import ProfileSectionCard from "../../src/components/ProfileSectionCard";
 import ProfileStatCard from "../../src/components/ProfileStatCard";
+import UsernameModal from "../../src/components/UsernameModal";
 import { logout } from "../../src/services/authService";
 import { getUserWardrobeItems } from "../../src/services/cloudWardrobeService";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
+  const [usernameModalVisible, setUsernameModalVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
@@ -164,6 +166,16 @@ export default function Profile() {
       {/* SETTINGS */}
       <ProfileSectionCard title="Settings">
 
+        {/* Set Username */}
+        <TouchableOpacity
+          style={styles.settingBtn}
+          onPress={() => setUsernameModalVisible(true)}
+        >
+          <Text style={[styles.settingBtnText, { color: theme.text }]}>
+            {profile?.username ? `👤 Change Username (@${profile.username})` : '👤 Set Username'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Dark Mode */}
         <View style={styles.settingRow}>
           <Text style={[styles.settingLabel, { color: theme.text }]}>Dark Mode</Text>
@@ -207,6 +219,19 @@ export default function Profile() {
         </TouchableOpacity>
 
       </ProfileSectionCard>
+
+      {/* Username Modal */}
+      <UsernameModal
+        visible={usernameModalVisible}
+        onClose={() => setUsernameModalVisible(false)}
+        currentUsername={profile?.username}
+        onSuccess={(newUsername) => {
+          setProfile({
+            ...profile,
+            username: newUsername,
+          });
+        }}
+      />
     </ScrollView>
   );
 }
