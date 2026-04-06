@@ -129,6 +129,11 @@ export async function getRecommendations({
 
   // Try Python backend first
   try {
+    console.log('[recommendationService] getRecommendations: trying backend', {
+      occasion,
+      temperatureC,
+      wardrobeCount: wardrobe.length,
+    });
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
 
@@ -148,10 +153,15 @@ export async function getRecommendations({
 
     clearTimeout(timeout);
     const data = await res.json();
+    console.log('[recommendationService] getRecommendations: backend response', {
+      source: data?.source || 'ai',
+      outfits: Array.isArray(data?.outfits) ? data.outfits.length : 0,
+    });
     return { outfits: data.outfits, source: 'ai' };
 
   } catch (e) {
     // Backend not running — fall back to local scoring
+    console.log('[recommendationService] getRecommendations: falling back to local scoring', e);
     const outfits = generateCombinations(wardrobe, occasion, temperatureC, lockedTop, lockedBottom, lockedShoes);
     return { outfits, source: 'local' };
   }
@@ -161,6 +171,10 @@ export { getItemCategory, getColor };
 
 export async function getAIWeeklyPlan(wardrobe, occasions) {
   try {
+    console.log('[recommendationService] getAIWeeklyPlan: trying backend', {
+      wardrobeCount: Array.isArray(wardrobe) ? wardrobe.length : 0,
+      occasions,
+    });
     const formData = new FormData();
     formData.append('wardrobe_json', JSON.stringify(wardrobe));
     formData.append('occasions_json', JSON.stringify(occasions));
@@ -170,9 +184,13 @@ export async function getAIWeeklyPlan(wardrobe, occasions) {
       body: formData,
     });
     const data = await res.json();
+    console.log('[recommendationService] getAIWeeklyPlan: backend response', {
+      source: data?.source || 'ai',
+      hasPlan: !!data?.plan && Object.keys(data.plan || {}).length > 0,
+    });
     return data;
   } catch (e) {
-    console.log('AI weekly plan error, using local:', e);
+    console.log('[recommendationService] getAIWeeklyPlan: backend unavailable, using local planner flow', e);
     return null;
   }
 } 

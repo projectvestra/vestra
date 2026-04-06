@@ -134,6 +134,7 @@ export default function Planner() {
   try {
     const aiPlan = await getAIWeeklyPlan(wardrobe, occasions);
     if (aiPlan && typeof aiPlan === 'object' && Object.keys(aiPlan).length) {
+      console.log('[planner] generateFullWeek: using backend weekly plan');
       // If the backend returns a week plan, use it
       for (const day of DAYS) {
         const dayItem = aiPlan[day];
@@ -147,10 +148,11 @@ export default function Planner() {
       return;
     }
   } catch (e) {
-    console.log('AI weekly plan failed, using local:', e);
+    console.log('[planner] generateFullWeek: backend weekly plan failed, using local scoring', e);
   }
 
   // Using local scoring
+  console.log('[planner] generateFullWeek: using local scoring');
   const usedCombos = new Set(); // track used combinations
 
   for (const day of DAYS) {
