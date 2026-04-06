@@ -1,15 +1,21 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function StylePreferencesScreen() {
   const router = useRouter();
   const { updatePreferences } = useOnboarding();
+  const { theme } = useTheme();
 
   const [selectedStyles, setSelectedStyles] = useState([]);
 
-  const stylesList = ["Casual", "Formal", "Sporty", "Streetwear"];
+  const stylesList = [
+    "Casual", "Formal", "Sporty", "Streetwear",
+    "Bohemian", "Minimalist", "Vintage", "Preppy",
+    "Gothic", "Retro", "Chic", "Eclectic"
+  ];
 
   const toggleStyle = (style) => {
     if (selectedStyles.includes(style)) {
@@ -25,70 +31,67 @@ export default function StylePreferencesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.progress}>Step 2 of 4</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]}>
+      <View style={styles.content}>
+        <Text style={[styles.progress, { color: theme.text3 }]}>Step 2 of 4</Text>
 
-      <Text style={styles.title}>Choose your style</Text>
-      <Text style={styles.subtitle}>
-        Select the styles you usually prefer.
-      </Text>
+        <Text style={[styles.title, { color: theme.text }]}>Choose your style</Text>
+        <Text style={[styles.subtitle, { color: theme.text2 }]}>
+          Select the styles you usually prefer.
+        </Text>
 
-      <View style={styles.optionsContainer}>
-        {stylesList.map(style => (
-          <TouchableOpacity
-            key={style}
-            style={[
-              styles.option,
-              selectedStyles.includes(style) && styles.selected
-            ]}
-            onPress={() => toggleStyle(style)}
-          >
-            <Text style={styles.optionText}>{style}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Style Preferences</Text>
+        <View style={styles.stylesContainer}>
+          {stylesList.map(style => (
+            <TouchableOpacity
+              key={style}
+              style={[
+                styles.styleOption,
+                { borderColor: theme.border, backgroundColor: theme.card },
+                selectedStyles.includes(style) && [styles.selected, { backgroundColor: theme.tint }]
+              ]}
+              onPress={() => toggleStyle(style)}
+            >
+              <Text style={[
+                styles.styleText,
+                { color: theme.text },
+                selectedStyles.includes(style) && { color: theme.bg }
+              ]}>
+                {style}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <View style={styles.actions}>
         <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.secondaryButtonText}>Back</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.primaryButton}
+          style={[styles.button, { backgroundColor: theme.tint }]}
           onPress={handleContinue}
         >
-          <Text style={styles.primaryButtonText}>Continue</Text>
+          <Text style={[styles.buttonText, { color: theme.bg }]}>Continue</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:{flex:1,padding:24,justifyContent:'center',backgroundColor:'#fff'},
-  progress:{fontSize:14,color:'#888',textAlign:'center',marginBottom:12},
-  title:{fontSize:26,fontWeight:'600',textAlign:'center',color:'#111',marginBottom:8},
-  subtitle:{fontSize:15,textAlign:'center',color:'#666',marginBottom:28},
-  optionsContainer:{marginBottom:32},
-  option:{
-    borderWidth:1,
-    borderColor:'#ddd',
-    borderRadius:10,
-    paddingVertical:16,
-    alignItems:'center',
-    marginBottom:12
+  container: { flex: 1 },
+  content: { padding: 24, justifyContent: 'center', minHeight: '100%' },
+  progress: { fontSize: 14, textAlign: 'center', marginBottom: 12 },
+  title: { fontSize: 26, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 15, textAlign: 'center', marginBottom: 32 },
+  sectionTitle: { fontSize: 18, fontWeight: '500', marginBottom: 16 },
+  stylesContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 32 },
+  styleOption: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 12,
+    marginBottom: 12,
   },
-  selected:{
-    backgroundColor:'#000',
-    borderColor:'#000'
-  },
-  optionText:{fontSize:16,color:'#111'},
-  actions:{flexDirection:'row',justifyContent:'space-between'},
-  secondaryButton:{paddingVertical:14,paddingHorizontal:24},
-  secondaryButtonText:{fontSize:15,color:'#555'},
-  primaryButton:{backgroundColor:'#000',paddingVertical:14,paddingHorizontal:28,borderRadius:10},
-  primaryButtonText:{color:'#fff',fontSize:15,fontWeight:'500'}
+  selected: { borderColor: '#007AFF', borderWidth: 2 },
+  styleText: { fontSize: 16 },
+  button: { paddingVertical: 16, borderRadius: 12, marginTop: 12 },
+  buttonText: { textAlign: 'center', fontSize: 16, fontWeight: '500' }
 });

@@ -1,37 +1,59 @@
-
 import { Tabs, usePathname, useRouter } from 'expo-router';
-import { TouchableOpacity, View, Text,StyleSheet } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../../src/context/ThemeContext';
+
 function WardrobeButton() {
   const pathname = usePathname();
   const router = useRouter();
-
   const isOnWardrobe = pathname === '/tabs/wardrobe';
-
-  const handlePress = () => {
-    if (isOnWardrobe) {
-      // Add-item flow will be wired later
-      router.push('/add-item');
-    } else {
-      router.push('/tabs/wardrobe');
-    }
-  };
-   return (
-    <TouchableOpacity onPress={handlePress} style={styles.wrapper}>
+  return (
+    <TouchableOpacity
+      onPress={() => router.push(isOnWardrobe ? '/add-item' : '/tabs/wardrobe')}
+      style={styles.wrapper}
+    >
       <View style={styles.button}>
-        <Text style={styles.icon}>
-          {isOnWardrobe ? '+' : '👕'}
-        </Text>
+        <Text style={styles.icon}>{isOnWardrobe ? '+' : '👗'}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
 export default function TabsLayout() {
-  return (
-    <Tabs screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="home" options={{ title: 'Home' }} />
-      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+  const { theme } = useTheme();
 
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: theme.bg,
+          borderTopColor: theme.bg2,
+          height: 60,
+          paddingBottom: 8,
+        },
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.icon,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+      }}
+    >
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 20 }}>{focused ? '🏠' : '🏡'}</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 20 }}>{focused ? '🧭' : '✨'}</Text>
+          ),
+        }}
+      />
       <Tabs.Screen
         name="wardrobe"
         options={{
@@ -39,11 +61,35 @@ export default function TabsLayout() {
           tabBarButton: (props) => <WardrobeButton {...props} />,
         }}
       />
-      <Tabs.Screen name="search" options={{ title: 'Search' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 20 }}>{focused ? '🔎' : '🔍'}</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 20 }}>{focused ? '👤' : '👥'}</Text>
+          ),
+        }}
+      />
+      {/* Planner hidden from tab bar but still accessible via router.push */}
+      <Tabs.Screen
+        name="planner"
+        options={{
+          href: null, // hides from tab bar completely
+        }}
+      />
     </Tabs>
   );
 }
+
 const styles = StyleSheet.create({
   wrapper: {
     top: -22,
@@ -57,10 +103,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  icon: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  icon: { color: '#fff', fontSize: 22 },
 });

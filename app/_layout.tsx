@@ -1,152 +1,74 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useState, useRef } from 'react';
 import { listenToAuthState } from '../src/services/authService';
 import { View, ActivityIndicator } from 'react-native';
-import { Colors } from '../constants/theme';
 import type { User } from 'firebase/auth';
 import { isOnboardingCompleted } from '../src/services/userPreferencesService';
 import { OnboardingProvider } from '../src/context/OnboardingContext';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
+
 export default function RootLayout() {
   const router = useRouter();
-  const segments = useSegments();
-
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
     const unsubscribe = listenToAuthState((authUser: User | null) => {
-  console.log("AUTH STATE CHANGED:", authUser);
-  setUser(authUser);
-  setLoading(false);
-});
-
+      setUser(authUser);
+      setLoading(false);
+      hasNavigated.current = false;
+    });
     return unsubscribe;
   }, []);
-useEffect(() => {
-  const checkNavigation = async () => {
-    if (loading) return;
 
-    if (!user) {
-      router.replace('/auth/login');
-      return;
-    }
+  useEffect(() => {
+    const checkNavigation = async () => {
+      if (loading) return;
+      if (hasNavigated.current) return;
+      hasNavigated.current = true;
 
-    try {
-      const onboardingDone = await isOnboardingCompleted();
+      if (!user) {
+        router.replace('/auth/login');
+        return;
+      }
 
-      console.log("ONBOARDING STATUS:", onboardingDone);
-
-      if (!onboardingDone) {
-        router.replace('/onboarding/step1');
-      } else {
+      try {
+        const onboardingDone = await isOnboardingCompleted();
+        if (!onboardingDone) {
+          router.replace('/onboarding/step1');
+        } else {
+          router.replace('/tabs/home');
+        }
+      } catch (error) {
+        console.log('Onboarding check error:', error);
         router.replace('/tabs/home');
       }
-    } catch (error) {
-      console.log("Onboarding check error:", error);
-      router.replace('/onboarding/step1');
-    }
-  };
+    };
 
-  checkNavigation();
-}, [user, loading]);
-
-//   useEffect(() => {
-//   const checkNavigation = async () => {
-//     if (loading) return;
-
-//     const onboardingDone = await isOnboardingCompleted();
-
-//     console.log("USER:", user);
-//     console.log("ONBOARDING:", onboardingDone);
-
-//     if (!user) {
-//       router.replace('/auth/login');
-//       return;
-//     }
-
-//     if (!onboardingDone) {
-//       router.replace('/onboarding/step1');
-//       return;
-//     }
-
-//     router.replace('/tabs/home');
-//   };
-
-//   checkNavigation();
-// }, [user, loading]);
-
-//   useEffect(() => {
-   
-//   const checkNavigation = async () => {
-//      if (loading) return;
-
-
-//      // Wait for router segments to be ready
-//     if (!segments?.[0]) return;
-
-//     const inAuthGroup = segments[0] === 'auth';
-//     const inOnboarding = segments[0] === 'onboarding';
-
-//     console.log("NAV CHECK");
-//     console.log("USER:", user);
-//     console.log("SEGMENTS:", segments);
-
-//     /* ----------------------------
-//        USER NOT LOGGED IN
-//     ----------------------------- */
-//     if (!user) {
-//       if (!inAuthGroup) {
-//         console.log("→ Redirect login");
-//         router.replace('/auth/login');
-//       }
-//       return;
-//     }
-
-//     /* ----------------------------
-//        USER LOGGED IN
-//     ----------------------------- */
-
-//     const onboardingDone = await isOnboardingCompleted();
-
-//     if (!onboardingDone) {
-//       if (!inOnboarding) {
-//         console.log("→ Redirect onboarding");
-//         router.replace('/onboarding/step1');
-//       }
-//       return;
-//     }
-
-//     /* ----------------------------
-//        USER READY → HOME
-//     ----------------------------- */
-
-//     if (inAuthGroup || inOnboarding) {
-//       console.log("→ Redirect onboarding");
-//       router.replace('/tabs/home');
-//     }
-//   };
-
-//   checkNavigation();
-// }, [user, loading, segments]);
+    checkNavigation();
+  }, [user, loading]);
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: Colors.light.background,
-        }}
-      >
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color="#000" />
       </View>
     );
   }
 
   return (
-  <OnboardingProvider>
-    <Stack screenOptions={{ headerShown: false }} />
-  </OnboardingProvider>
-);
+    <ThemeProvider>
+      <OnboardingProvider>
+        <AppStatusBar />
+        <Stack screenOptions={{ headerShown: false }} />
+      </OnboardingProvider>
+    </ThemeProvider>
+  );
+}
+
+function AppStatusBar() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
 }

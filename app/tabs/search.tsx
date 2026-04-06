@@ -6,18 +6,21 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useState, useMemo } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../src/context/ThemeContext';
 import {
   fetchMarketplaceProducts,
   filterByCategory,
   sortByPrice,
 } from '../../src/services/marketplaceService';
 import MarketplaceProductCard from '../../src/components/MarketplaceProductCard';
-import { Colors } from '../../constants/theme';
 
 const categories = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
 export default function Marketplace() {
   const allProducts = fetchMarketplaceProducts();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -34,8 +37,8 @@ export default function Marketplace() {
   }, [selectedCategory, sortOrder]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Marketplace</Text>
+    <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }] }>
+      <Text style={[styles.title, { color: theme.text }]}>Marketplace</Text>
 
       {/* Category Filters */}
       <View style={styles.categoryRow}>
@@ -44,14 +47,14 @@ export default function Marketplace() {
             key={cat}
             style={[
               styles.categoryChip,
-              selectedCategory === cat && styles.categoryActive,
+              { backgroundColor: selectedCategory === cat ? theme.tint : theme.bg2 },
             ]}
             onPress={() => setSelectedCategory(cat)}
           >
             <Text
               style={[
                 styles.categoryText,
-                selectedCategory === cat && styles.categoryTextActive,
+                { color: selectedCategory === cat ? '#fff' : theme.text },
               ]}
             >
               {cat}
@@ -67,7 +70,7 @@ export default function Marketplace() {
           setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
         }
       >
-        <Text style={styles.sortText}>
+        <Text style={[styles.sortText, { color: theme.text2 }] }>
           Sort: Price {sortOrder === 'asc' ? 'Low → High' : 'High → Low'}
         </Text>
       </TouchableOpacity>
@@ -91,13 +94,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 12,
-    backgroundColor: Colors.light.background,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
-    color: Colors.light.text,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -108,25 +109,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#f2f2f2',
     marginRight: 8,
     marginBottom: 8,
   },
-  categoryActive: {
-    backgroundColor: Colors.light.tint,
-  },
   categoryText: {
     fontSize: 12,
-    color: Colors.light.text,
-  },
-  categoryTextActive: {
-    color: '#fff',
   },
   sortButton: {
     marginBottom: 12,
   },
   sortText: {
     fontSize: 13,
-    color: Colors.light.icon,
   },
 });
