@@ -10,13 +10,26 @@
     "newArchEnabled": true,
     "extra": {
       "newsApiKey": "aaf75385d0334c189ae57c2bea65ba0a",
+      "firebase": {
+        "apiKey": "AIzaSyCqV9FqfYppOJdJPlSmPAeyKuMifmAcBbI",
+        "authDomain": "vestra-c26ea.firebaseapp.com",
+        "projectId": "vestra-c26ea",
+        "storageBucket": "vestra-c26ea.firebasestorage.app",
+        "messagingSenderId": "219404516716",
+        "appId": "1:219404516716:web:d81a39bab3b9fabe484749",
+        "googleWebClientId": "932250453995-t5g6g2ri2b6oihpid8a7ul6cguj07092.apps.googleusercontent.com",
+        "googleAndroidClientId": "932250453995-t40gev2cegr19dskc7qr92t77oh4nkqi.apps.googleusercontent.com"
+      },
       "router": {},
       "eas": {
         "projectId": "4361b3f6-e7c3-4c5b-b63a-391242df5439"
       }
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,8 +41,9 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.vestra",
-    "googleServicesFile": "./google-services.json"
-      },
+      "googleServicesFile": "./android/app/google-services.json",
+      "runtimeVersion": "1.0.0"
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
@@ -53,6 +67,9 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "owner": "areyoukaran"
+    "owner": "areyoukaran",
+    "updates": {
+      "url": "https://u.expo.dev/4361b3f6-e7c3-4c5b-b63a-391242df5439"
+    }
   }
 }

@@ -1,5 +1,6 @@
 // src/services/authService.js
 
+import Constants from 'expo-constants';
 import { auth } from './firebaseConfig';
 import {
   createUserWithEmailAndPassword,
@@ -13,12 +14,15 @@ import {
 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
+const expoExtra = Constants.expoConfig?.extra || {};
+const googleWebClientId = expoExtra.firebase?.googleWebClientId || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
 /* ---------------------------------------------
    Configure Google Sign-In (Native)
 --------------------------------------------- */
 
 GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  webClientId: googleWebClientId,
 });
 
 /* ---------------------------------------------

@@ -39,14 +39,18 @@ export function ThemeProvider({ children }) {
   const toggleDark = (value) => setIsDark(value);
 
   useEffect(() => {
+    setIsDark(false);
+
     const unsubscribeAuth = auth.onAuthStateChanged(user => {
-      if (!user) return;
+      if (!user) {
+        setIsDark(false);
+        return;
+      }
+
       // Listen to Firestore for dark mode preference
       const ref = doc(db, 'user_profiles', user.uid);
       const unsubscribeDoc = onSnapshot(ref, snap => {
-        if (snap.exists()) {
-          setIsDark(snap.data().darkMode || false);
-        }
+        setIsDark(snap.exists() ? snap.data().darkMode || false : false);
       });
       return unsubscribeDoc;
     });
