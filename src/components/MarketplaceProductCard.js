@@ -4,9 +4,12 @@ import { useTheme } from '../context/ThemeContext';
 export default function MarketplaceProductCard({ product }) {
   const { theme } = useTheme();
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (product.affiliateUrl) {
-      Linking.openURL(product.affiliateUrl);
+      const canOpen = await Linking.canOpenURL(product.affiliateUrl);
+      if (canOpen) {
+        await Linking.openURL(product.affiliateUrl);
+      }
     }
   };
 

@@ -1,6 +1,6 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
-import { listenToAuthState } from '../src/services/authService';
+import { listenToAuthState, getProfileCompletionStatus } from '../src/services/authService';
 import { View, ActivityIndicator } from 'react-native';
 import type { User } from 'firebase/auth';
 import { isOnboardingCompleted } from '../src/services/userPreferencesService';
@@ -35,6 +35,12 @@ export default function RootLayout() {
       }
 
       try {
+        const completion = await getProfileCompletionStatus(user.uid);
+        if (!completion.hasUsername) {
+          router.replace('/auth/complete-profile');
+          return;
+        }
+
         const onboardingDone = await isOnboardingCompleted();
         if (!onboardingDone) {
           router.replace('/onboarding/step1');

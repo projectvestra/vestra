@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ export default function UsernameModal({ visible, onClose, currentUsername, onSuc
   const [loading, setLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState(null);
   const [checking, setChecking] = useState(false);
+  const debounceTimeoutRef = useRef(null);
+  const requestSeqRef = useRef(0);
 
   useEffect(() => {
     if (visible) {
@@ -25,25 +27,52 @@ export default function UsernameModal({ visible, onClose, currentUsername, onSuc
     }
   }, [visible, currentUsername]);
 
-  const checkUsernameAvailability = async (value) => {
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const checkUsernameAvailability = (value) => {
     if (!value || value.length < 3) {
       setIsAvailable(null);
+      setChecking(false);
       return;
     }
 
-    setChecking(true);
-    try {
-      const taken = await isUsernameTaken(value.toLowerCase().trim());
-      setIsAvailable(!taken);
-    } catch (err) {
-      setIsAvailable(null);
-    } finally {
-      setChecking(false);
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
+
+    setChecking(true);
+    const requestSeq = ++requestSeqRef.current;
+
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        const taken = await isUsernameTaken(value.toLowerCase().trim());
+        if (requestSeq !== requestSeqRef.current) return;
+        setIsAvailable(!taken);
+      } catch (err) {
+        if (requestSeq !== requestSeqRef.current) return;
+        setIsAvailable(null);
+      } finally {
+        if (requestSeq === requestSeqRef.current) {
+          setChecking(false);
+        }
+      }
+    }, 450);
   };
 
   const handleUsernameChange = (value) => {
     setUsername(value);
+    setIsAvailable(null);
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    setChecking(false);
+
     // Validate format: letters, numbers, underscores only
     if (!/^[a-z0-9_]*$/.test(value.toLowerCase())) {
       setError('Username can only contain letters, numbers, and underscores');

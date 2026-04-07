@@ -18,7 +18,12 @@ export async function isUsernameTaken(username) {
  * @param {string|null} [oldUsername]
  */
 export async function claimUsername(userId, newUsername, oldUsername = null) {
+  const effectiveUserId = userId || auth.currentUser?.uid;
   const clean = newUsername.toLowerCase().trim();
+
+  if (!effectiveUserId) {
+    throw new Error('User not authenticated');
+  }
 
   if (clean.length < 3) throw new Error('Username must be at least 3 characters');
   if (!/^[a-z0-9_]+$/.test(clean)) throw new Error('Username can only contain letters, numbers, and underscores');
@@ -27,7 +32,7 @@ export async function claimUsername(userId, newUsername, oldUsername = null) {
     const newRef = doc(db, 'usernames', clean);
     const newSnap = await transaction.get(newRef);
 
-    if (newSnap.exists() && newSnap.data().userId !== userId) {
+    if (newSnap.exists() && newSnap.data().userId !== effectiveUserId) {
       throw new Error('Username already taken');
     }
 
@@ -38,10 +43,10 @@ export async function claimUsername(userId, newUsername, oldUsername = null) {
     }
 
     // Claim new username
-    transaction.set(newRef, { userId, username: clean, claimedAt: new Date().toISOString() });
+    transaction.set(newRef, { userId: effectiveUserId, username: clean, claimedAt: new Date().toISOString() });
     
     // Update user profile with username
-    const userProfileRef = doc(db, 'user_profiles', userId);
+    const userProfileRef = doc(db, 'user_profiles', effectiveUserId);
     transaction.update(userProfileRef, {
       username: clean,
       updatedAt: new Date().toISOString(),
