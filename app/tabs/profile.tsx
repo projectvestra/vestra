@@ -225,7 +225,7 @@ export default function Profile() {
         visible={usernameModalVisible}
         onClose={() => setUsernameModalVisible(false)}
         currentUsername={profile?.username}
-        onSuccess={(newUsername) => {
+        onSuccess={(newUsername: string) => {
           setProfile({
             ...profile,
             username: newUsername,

@@ -4,8 +4,9 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import {
@@ -18,7 +19,8 @@ import MarketplaceProductCard from '../../src/components/MarketplaceProductCard'
 const categories = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories'];
 
 export default function Marketplace() {
-  const allProducts = fetchMarketplaceProducts();
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -34,7 +36,26 @@ export default function Marketplace() {
     products = sortByPrice(products, sortOrder);
 
     return products;
-  }, [selectedCategory, sortOrder]);
+  }, [allProducts, selectedCategory, sortOrder]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProducts = async () => {
+      setLoading(true);
+      const products = await fetchMarketplaceProducts();
+      if (active) {
+        setAllProducts(products);
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }] }>
@@ -75,17 +96,27 @@ export default function Marketplace() {
         </Text>
       </TouchableOpacity>
 
-      {/* Product Grid */}
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MarketplaceProductCard product={item} />
-        )}
-        numColumns={2}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      />
+      {loading ? (
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color={theme.tint} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <MarketplaceProductCard product={item} />
+          )}
+          numColumns={2}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Text style={[styles.emptyText, { color: theme.text2 }]}>No products available right now.</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -120,5 +151,20 @@ const styles = StyleSheet.create({
   },
   sortText: {
     fontSize: 13,
+  },
+  loaderWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 30,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
