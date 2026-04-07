@@ -41,20 +41,31 @@ function normalizeProduct(item, index) {
 
 async function fetchDummyProductsFallback() {
   try {
-    const response = await fetch('https://dummyjson.com/products?limit=30');
-    if (!response.ok) {
-      return DEFAULT_PRODUCTS;
-    }
+    const categories = ["men's clothing", "women's clothing"];
+    const responses = await Promise.all(
+      categories.map((category) =>
+        fetch(`https://fakestoreapi.com/products/category/${encodeURIComponent(category)}`)
+      )
+    );
 
-    const payload = await response.json();
-    const rawProducts = payload?.products || [];
+    const payloads = await Promise.all(
+      responses.map(async (response) => (response.ok ? response.json() : []))
+    );
+
+    const rawProducts = payloads.flat();
 
     return rawProducts.map((item, index) =>
       normalizeProduct(
         {
-          ...item,
-          imageUrl: item.thumbnail || item.images?.[0] || '',
-          source: 'dummyjson',
+          id: item.id,
+          name: item.title,
+          brand: 'Fashion Store',
+          category: item.category,
+          price: item.price,
+          currency: '$',
+          imageUrl: item.image,
+          description: item.description,
+          source: 'fakestoreapi',
         },
         index
       )

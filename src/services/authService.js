@@ -45,6 +45,38 @@ function deriveDisplayNameFromEmail(email) {
     .join(' ');
 }
 
+async function syncProfileFromUser(user) {
+  if (!user) return;
+
+  const profileRef = doc(db, 'user_profiles', user.uid);
+  const profileSnap = await getDoc(profileRef);
+
+  const displayName = user.displayName || deriveDisplayNameFromEmail(user.email || '');
+  const patch = {
+    email: user.email || '',
+    displayName,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (!profileSnap.exists()) {
+    await setDoc(profileRef, {
+      ...patch,
+      username: null,
+      createdAt: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const existing = profileSnap.data() || {};
+  const mergePatch = {};
+
+  if (!existing.email && patch.email) mergePatch.email = patch.email;
+  if (!existing.displayName && patch.displayName) mergePatch.displayName = patch.displayName;
+  if (Object.keys(mergePatch).length > 0) {
+    await setDoc(profileRef, { ...mergePatch, updatedAt: patch.updatedAt }, { merge: true });
+  }
+}
+
 export async function isUsernameUnique(username) {
   try {
     const cleanUsername = sanitizeUsername(username);
@@ -131,6 +163,7 @@ export async function registerWithEmail(name, email, password, username) {
 export async function loginWithEmail(email, password) {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    await syncProfileFromUser(userCredential.user);
 
     return {
       success: true,
@@ -186,6 +219,7 @@ export async function loginWithUsername(username, password) {
     }
 
     const userCredential = await signInWithEmailAndPassword(auth, userEmail, password);
+    await syncProfileFromUser(userCredential.user);
 
     return {
       success: true,
@@ -214,7 +248,8 @@ export async function loginWithGoogle() {
     });
 
     const userInfo = await GoogleSignin.signIn();
-    const idToken = userInfo?.data?.idToken;
+    const tokens = await GoogleSignin.getTokens().catch(() => null);
+    const idToken = userInfo?.data?.idToken || userInfo?.idToken || tokens?.idToken;
 
     if (!idToken) {
       return {
@@ -227,35 +262,8 @@ export async function loginWithGoogle() {
     const result = await signInWithCredential(auth, googleCredential);
 
     const user = result.user;
+    await syncProfileFromUser(user);
     const profileRef = doc(db, 'user_profiles', user.uid);
-    const profileSnap = await getDoc(profileRef);
-
-    const displayName = user.displayName || deriveDisplayNameFromEmail(user.email || '');
-
-    if (!profileSnap.exists()) {
-      await setDoc(profileRef, {
-        displayName,
-        email: user.email || '',
-        username: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    } else {
-      const data = profileSnap.data() || {};
-      const patch = {};
-
-      if (!data.displayName) patch.displayName = displayName;
-      if (!data.email && user.email) patch.email = user.email;
-
-      if (Object.keys(patch).length > 0) {
-        await setDoc(
-          profileRef,
-          { ...patch, updatedAt: new Date().toISOString() },
-          { merge: true }
-        );
-      }
-    }
-
     const refreshedProfile = await getDoc(profileRef);
     const hasUsername = Boolean(refreshedProfile.data()?.username);
 
