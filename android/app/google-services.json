@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "219404516716",
+    "project_id": "vestra-c26ea",
+    "storage_bucket": "vestra-c26ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:219404516716:android:6538d12b5b6f605e484749",
+        "android_client_info": {
+          "package_name": "com.anonymous.vestra"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTZP-0lZZGrOBeKOEBn_AorxL9wU2JZ24"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
