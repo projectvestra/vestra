@@ -62,6 +62,20 @@ import { doc, getDoc } from 'firebase/firestore';
 
 const ONBOARDING_KEY = 'vestra_onboarding_completed';
 
+function getScopedOnboardingKey() {
+  const uid = auth.currentUser?.uid;
+  return uid ? `${ONBOARDING_KEY}_${uid}` : ONBOARDING_KEY;
+}
+
+function hasLegacyOnboardingPreferences(profile) {
+  return Boolean(
+    profile?.bodyType ||
+      (Array.isArray(profile?.styles) && profile.styles.length > 0) ||
+      (Array.isArray(profile?.colors) && profile.colors.length > 0) ||
+      Array.isArray(profile?.constraints)
+  );
+}
+
 /* ------------------------------------------
    (OPTIONAL) Cache Preferences Locally
 ------------------------------------------ */
@@ -98,7 +112,8 @@ export async function getCachedPreferences() {
 ------------------------------------------ */
 export async function setOnboardingCompleted() {
   try {
-    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    const scopedKey = getScopedOnboardingKey();
+    await AsyncStorage.setItem(scopedKey, 'true');
   } catch (error) {
     console.log('Onboarding save error', error);
   }
@@ -113,12 +128,29 @@ export async function isOnboardingCompleted() {
     if (user) {
       const profileSnap = await getDoc(doc(db, 'user_profiles', user.uid));
       if (profileSnap.exists()) {
-        return true;
+        const profile = profileSnap.data() || {};
+
+        if (profile.onboardingCompleted === true) {
+          return true;
+        }
+
+        if (hasLegacyOnboardingPreferences(profile)) {
+          return true;
+        }
+
+        return false;
       }
     }
 
-    const value = await AsyncStorage.getItem(ONBOARDING_KEY);
-    return value === 'true';
+    const scopedKey = getScopedOnboardingKey();
+    const scopedValue = await AsyncStorage.getItem(scopedKey);
+    if (scopedValue === 'true') {
+      return true;
+    }
+
+    // Backward compatibility with older builds that used a global key.
+    const legacyValue = await AsyncStorage.getItem(ONBOARDING_KEY);
+    return legacyValue === 'true';
   } catch {
     return false;
   }

@@ -41,7 +41,8 @@ export default function ClothingConstraintsScreen() {
 
     const finalPreferences = {
       ...preferences,
-      constraints: selectedConstraints
+      constraints: selectedConstraints,
+      onboardingCompleted: true,
     };
 
     await createUserProfile(finalPreferences);

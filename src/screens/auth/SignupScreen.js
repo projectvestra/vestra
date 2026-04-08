@@ -109,7 +109,7 @@ export default function SignupScreen() {
 
     setLoading(false);
 
-    router.replace('/tabs/home');
+    router.replace('/onboarding/step1');
   };
 
   return (
