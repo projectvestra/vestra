@@ -35,7 +35,7 @@ export async function createUserProfile(preferences) {
   if (!user) return null;
 
   try {
-    await setDoc(doc(db, 'user_profiles', user.uid), preferences);
+    await setDoc(doc(db, 'user_profiles', user.uid), preferences, { merge: true });
     return true;
   } catch (e) {
     console.log('createUserProfile error:', e);
