@@ -179,7 +179,35 @@ EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your_android_client_id
 
 # AI Backend
 ANTHROPIC_API_KEY=your_anthropic_key
+
+# Marketplace API
+EXPO_PUBLIC_MARKETPLACE_API_URL=https://your-domain.com/api/marketplace/products
 ```
+
+Marketplace endpoint response example:
+
+```json
+{
+  "products": [
+    {
+      "id": "sku_123",
+      "name": "Men Navy Slim Fit Shirt",
+      "brand": "Roadster",
+      "category": "Shirts",
+      "price": 1299,
+      "currency": "INR",
+      "imageUrl": "https://cdn.example.com/images/sku_123.jpg",
+      "productUrl": "https://www.myntra.com/shirt/sku_123",
+      "description": "100% cotton shirt"
+    }
+  ]
+}
+```
+
+Notes:
+- You can return either a raw array or an object with a products array.
+- Product URL fields supported are affiliateUrl, url, link, productUrl, links.product, links.affiliate, and product.url.
+- The app reads the endpoint from app extra marketplace apiUrl first, then EXPO_PUBLIC_MARKETPLACE_API_URL.
 
 ### 4. Set Up Firebase Project
 1. Go to [Firebase Console](https://console.firebase.google.com/)

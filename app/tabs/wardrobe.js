@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import WardrobeItemCard from '../../src/components/WardrobeItemCard';
 import StyleAssistantModal from '../../src/components/home/StyleAssistantModal';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CATEGORIES = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories', 'Jackets', 'Hoodies', 'Sunglasses'];
 
@@ -32,18 +33,24 @@ export default function Wardrobe() {
   const { theme } = useTheme();
 
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const data = await getUserWardrobeItems();
       setAllItems(data.items || []);
     } catch (error) {
       console.log('Wardrobe fetch error:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   // Filter items based on selected category
   const filteredItems = selectedCategory === 'All'

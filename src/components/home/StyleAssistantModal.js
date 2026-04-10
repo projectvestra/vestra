@@ -463,7 +463,7 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
               <ActivityIndicator size="large" color="#000" style={{ marginTop: 60 }} />
             ) : !shopResults ? (
               <View style={s.emptyShop}>
-                <Text style={s.emptyShopText}>Tap "Shop this look" on any outfit card to find pieces online.</Text>
+                <Text style={s.emptyShopText}>Tap Shop this look on any outfit card to find pieces online.</Text>
                 <TouchableOpacity style={s.generateBtn} onPress={() => setTab('swipe')}>
                   <Text style={s.generateBtnText}>← Back to outfits</Text>
                 </TouchableOpacity>

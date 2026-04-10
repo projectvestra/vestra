@@ -96,7 +96,7 @@ export default function Login() {
         style={styles.footerText}
         onPress={() => router.push('/auth/signup')}
       >
-        Don't have an account? Sign up
+        Do not have an account? Sign up
       </Text>
     </View>
   );

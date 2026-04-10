@@ -6,6 +6,15 @@ const MARKETPLACE_API_URL =
 
 const DEFAULT_PRODUCTS = [];
 
+function sanitizeLink(url) {
+  if (!url || typeof url !== 'string') return '';
+  const value = url.trim();
+  if (!value) return '';
+  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  if (value.startsWith('//')) return `https:${value}`;
+  return '';
+}
+
 function toAmazonSearchUrl(name) {
   if (!name) return '';
   const query = encodeURIComponent(name);
@@ -23,14 +32,24 @@ function normalizeCategory(rawCategory) {
 function normalizeProduct(item, index) {
   const category = normalizeCategory(item.category);
   const fallbackLink = toAmazonSearchUrl(item.name || item.title || 'fashion');
-  const link = item.affiliateUrl || item.url || item.link || item.productUrl || fallbackLink;
+  const link =
+    sanitizeLink(item.affiliateUrl) ||
+    sanitizeLink(item.url) ||
+    sanitizeLink(item.link) ||
+    sanitizeLink(item.productUrl) ||
+    sanitizeLink(item?.links?.product) ||
+    sanitizeLink(item?.links?.affiliate) ||
+    sanitizeLink(item?.product?.url) ||
+    fallbackLink;
+
+  const amount = Number(item.price ?? item.amount ?? item.salePrice ?? 0);
 
   return {
     id: String(item.id || item.productId || `remote-${index}`),
     name: item.name || item.title || 'Untitled product',
     brand: item.brand || item.vendor || 'Brand',
     category,
-    price: Number(item.price || item.amount || 0),
+    price: Number.isFinite(amount) ? amount : 0,
     currency: item.currency || '₹',
     imageUrl: item.imageUrl || item.image || item.thumbnail || '',
     description: item.description || 'Fashion product',
@@ -83,7 +102,7 @@ export async function fetchMarketplaceProducts() {
   try {
     const response = await fetch(MARKETPLACE_API_URL);
     if (!response.ok) {
-      return DEFAULT_PRODUCTS;
+      return fetchDummyProductsFallback();
     }
 
     const payload = await response.json();

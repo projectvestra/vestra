@@ -10,6 +10,9 @@
     "newArchEnabled": true,
     "extra": {
       "newsApiKey": "aaf75385d0334c189ae57c2bea65ba0a",
+      "marketplace": {
+        "apiUrl": ""
+      },
       "firebase": {
         "apiKey": "AIzaSyCqV9FqfYppOJdJPlSmPAeyKuMifmAcBbI",
         "authDomain": "vestra-c26ea.firebaseapp.com",
@@ -49,6 +52,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "@react-native-google-signin/google-signin",
       "expo-router",
       [
         "expo-splash-screen",
@@ -61,7 +65,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
