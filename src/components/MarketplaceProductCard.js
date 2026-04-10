@@ -1,21 +1,36 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Linking, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 export default function MarketplaceProductCard({ product }) {
   const { theme } = useTheme();
 
   const handleBuyNow = async () => {
-    if (product.affiliateUrl) {
+    if (!product.affiliateUrl) {
+      Alert.alert('Link unavailable', 'No product link is available for this item right now.');
+      return;
+    }
+
+    try {
       const canOpen = await Linking.canOpenURL(product.affiliateUrl);
-      if (canOpen) {
-        await Linking.openURL(product.affiliateUrl);
+      if (!canOpen) {
+        Alert.alert('Invalid link', 'Unable to open this product link.');
+        return;
       }
+      await Linking.openURL(product.affiliateUrl);
+    } catch {
+      Alert.alert('Open failed', 'Could not open the product page. Please try again.');
     }
   };
 
   return (
     <View style={[styles.card, { backgroundColor: theme.bg2 }]}> 
-      <Image source={{ uri: product.imageUrl }} style={styles.image} />
+      {product.imageUrl ? (
+        <Image source={{ uri: product.imageUrl }} style={styles.image} />
+      ) : (
+        <View style={[styles.image, styles.imageFallback]}>
+          <Text style={styles.imageFallbackText}>No image</Text>
+        </View>
+      )}
 
       <View style={styles.content}>
         <Text style={[styles.brand, { color: theme.icon }]}>{product.brand}</Text>
@@ -49,6 +64,16 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 140,
+  },
+  imageFallback: {
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageFallbackText: {
+    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '500',
   },
   content: {
     padding: 12,

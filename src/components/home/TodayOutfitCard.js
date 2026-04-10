@@ -6,7 +6,7 @@ export default function TodayOutfitCard({ outfit }) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Today's Outfit</Text>
+      <Text style={styles.title}>Today Outfit</Text>
 
       <View style={styles.row}>
         {outfit.shirt && (

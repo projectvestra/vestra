@@ -83,6 +83,8 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
         fit: editFit,
         colorName: item.colorName,
         colorHex: item.color,
+        colorNames: item.colorNames,
+        colorHexes: item.colorPalette,
       });
       closeCard();
       if (onEdit) onEdit();
@@ -134,8 +136,20 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
 
                   <View style={styles.metaRow}>
                     <View style={[styles.colorDot, { backgroundColor: item.color || '#ccc' }]} />
-                    <Text style={styles.metaText}>{item.colorName || item.category}</Text>
+                    <Text style={styles.metaText}>
+                      {item.colorNames?.length ? item.colorNames.join(', ') : (item.colorName || item.category)}
+                    </Text>
                   </View>
+                  {item.colorPalette?.length > 1 ? (
+                    <View style={styles.paletteRow}>
+                      {item.colorPalette.slice(0, 3).map((hex, index) => (
+                        <View
+                          key={`${item.id}-palette-${index}`}
+                          style={[styles.paletteDot, { backgroundColor: hex || '#ccc' }]}
+                        />
+                      ))}
+                    </View>
+                  ) : null}
                   {item.size && <Text style={styles.metaText}>Size: {item.size}</Text>}
                   {item.fit && <Text style={styles.metaText}>Fit: {item.fit}</Text>}
 
@@ -240,7 +254,9 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
                 <ScrollView showsVerticalScrollIndicator={false}>
                   <Text style={styles.title}>Shop this item</Text>
                   <Image source={{ uri: item.image }} style={styles.shopPreviewImg} />
-                  <Text style={styles.shopItemName}>{item.colorName} {item.category}</Text>
+                  <Text style={styles.shopItemName}>
+                    {(item.colorNames?.[0] || item.colorName || 'Any color')} {item.category}
+                  </Text>
 
                   <Text style={styles.sectionLabel}>Find exact or similar item on:</Text>
 
@@ -265,7 +281,7 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
                   ))}
 
                   <Text style={styles.shopNote}>
-                    Opens search for "{item.colorName} {item.category}" on each platform
+                    Opens search for: {item.colorNames?.[0] || item.colorName || 'Any'} {item.category}
                   </Text>
 
                   <TouchableOpacity style={styles.editButton} onPress={() => setShopMode(false)}>
@@ -347,6 +363,18 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: '#555',
     fontSize: 14,
+  },
+  paletteRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 8,
+  },
+  paletteDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
   },
   actionRow: {
     flexDirection: 'row',

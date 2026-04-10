@@ -65,6 +65,8 @@ export async function createWardrobeItem(item) {
     clothingType: item.category,
     detectedColor: item.colorName || 'Unknown',
     colorHex: item.colorHex || '#808080',
+    detectedColors: item.colorNames || [item.colorName || 'Unknown'],
+    colorHexes: item.colorHexes || [item.colorHex || '#808080'],
     size: item.size || null,
     fit: item.fit || null,
     brand: null,
@@ -90,6 +92,8 @@ export async function updateWardrobeItem(itemId, updates) {
     fit: updates.fit || null,
     detectedColor: updates.colorName || 'Unknown',
     colorHex: updates.colorHex || '#808080',
+    detectedColors: updates.colorNames || [updates.colorName || 'Unknown'],
+    colorHexes: updates.colorHexes || [updates.colorHex || '#808080'],
   });
 
   // Clear cache
@@ -128,6 +132,8 @@ export async function getUserWardrobeItems() {
         category: data.clothingType,
         color: data.colorHex,
         colorName: data.detectedColor,
+        colorPalette: data.colorHexes || [data.colorHex || '#808080'],
+        colorNames: data.detectedColors || [data.detectedColor || 'Unknown'],
         size: data.size,
         fit: data.fit,
       };

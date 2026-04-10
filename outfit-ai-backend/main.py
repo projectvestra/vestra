@@ -1,5 +1,7 @@
 import os, json, uuid
-from fastapi import FastAPI, Form
+from urllib.parse import quote
+from urllib.request import urlopen
+from fastapi import FastAPI, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import re
@@ -8,9 +10,154 @@ load_dotenv()
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+MARKETPLACE_PRODUCTS = [
+    {
+        "id": "myntra-shirt-001",
+        "name": "Navy Slim Fit Cotton Shirt",
+        "brand": "Roadster",
+        "category": "Shirts",
+        "price": 1299,
+        "currency": "INR",
+        "imageUrl": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80",
+        "productUrl": "https://www.myntra.com/shirts/roadster/roadster-men-navy-slim-fit-casual-shirt/",
+        "description": "Breathable casual shirt for daily wear",
+        "source": "myntra",
+    },
+    {
+        "id": "ajio-pants-001",
+        "name": "Black Tapered Chinos",
+        "brand": "NETPLAY",
+        "category": "Pants",
+        "price": 1499,
+        "currency": "INR",
+        "imageUrl": "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80",
+        "productUrl": "https://www.ajio.com/netplay-men-tapered-fit-trousers/p/",
+        "description": "Stretch chinos with tapered silhouette",
+        "source": "ajio",
+    },
+    {
+        "id": "amazon-shoes-001",
+        "name": "White Lifestyle Sneakers",
+        "brand": "Puma",
+        "category": "Shoes",
+        "price": 2999,
+        "currency": "INR",
+        "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+        "productUrl": "https://www.amazon.in/s?k=puma+white+lifestyle+sneakers",
+        "description": "Everyday sneakers with lightweight cushioning",
+        "source": "amazon",
+    },
+    {
+        "id": "flipkart-acc-001",
+        "name": "Classic Brown Leather Belt",
+        "brand": "Allen Solly",
+        "category": "Accessories",
+        "price": 899,
+        "currency": "INR",
+        "imageUrl": "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=800&q=80",
+        "productUrl": "https://www.flipkart.com/search?q=allen+solly+brown+leather+belt",
+        "description": "Genuine leather belt with metal buckle",
+        "source": "flipkart",
+    },
+    {
+        "id": "myntra-shirt-002",
+        "name": "White Relaxed Linen Shirt",
+        "brand": "H&M",
+        "category": "Shirts",
+        "price": 1799,
+        "currency": "INR",
+        "imageUrl": "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=80",
+        "productUrl": "https://www.myntra.com/shirts/h%26m/hm-men-white-relaxed-fit-linen-shirt/",
+        "description": "Soft linen shirt for summer outfits",
+        "source": "myntra",
+    },
+]
+
+REMOTE_PRODUCTS_URL = "https://fakestoreapi.com/products"
+
+
+def _normalize_marketplace_category(raw_category: str) -> str:
+    category = (raw_category or "").lower()
+    if any(token in category for token in ["shirt", "top", "men's clothing", "women's clothing"]):
+        return "Shirts"
+    if any(token in category for token in ["pant", "jean", "trouser"]):
+        return "Pants"
+    if any(token in category for token in ["shoe", "sneaker", "footwear"]):
+        return "Shoes"
+    return "Accessories"
+
+
+def _to_search_product_url(name: str) -> str:
+    query = quote(name or "fashion product")
+    return f"https://www.amazon.in/s?k={query}"
+
+
+def _map_remote_product(item: dict) -> dict:
+    product_name = item.get("title") or item.get("name") or "Untitled product"
+    return {
+        "id": f"remote-{item.get('id', uuid.uuid4().hex)}",
+        "name": product_name,
+        "brand": item.get("brand") or "Fashion Store",
+        "category": _normalize_marketplace_category(item.get("category", "")),
+        "price": float(item.get("price") or 0),
+        "currency": "USD",
+        "imageUrl": item.get("image") or item.get("imageUrl") or "",
+        "productUrl": item.get("url") or item.get("productUrl") or _to_search_product_url(product_name),
+        "description": item.get("description") or "Fashion product",
+        "source": "fakestoreapi",
+    }
+
+
+def _fetch_remote_marketplace_products() -> list[dict]:
+    try:
+        with urlopen(REMOTE_PRODUCTS_URL, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, list):
+            return []
+        return [_map_remote_product(item) for item in payload if isinstance(item, dict)]
+    except Exception:
+        return []
+
 @app.get("/health")
 def health():
     return {"status": "ok", "model": "claude-sonnet-4-6"}
+
+@app.get("/marketplace/products")
+def get_marketplace_products(
+    category: str | None = Query(default=None),
+    q: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    sort: str = Query(default="popular"),
+):
+    remote_products = _fetch_remote_marketplace_products()
+    products = remote_products if remote_products else MARKETPLACE_PRODUCTS
+
+    if category and category.lower() != "all":
+        products = [
+            product for product in products
+            if product.get("category", "").lower() == category.lower()
+        ]
+
+    if q:
+        query_text = q.lower().strip()
+        products = [
+            product for product in products
+            if query_text in product.get("name", "").lower()
+            or query_text in product.get("brand", "").lower()
+            or query_text in product.get("description", "").lower()
+            or query_text in product.get("category", "").lower()
+        ]
+
+    if sort == "price_asc":
+        products = sorted(products, key=lambda product: float(product.get("price", 0)))
+    elif sort == "price_desc":
+        products = sorted(products, key=lambda product: float(product.get("price", 0)), reverse=True)
+
+    return {
+        "products": products[:limit],
+        "total": len(products),
+        "source": "remote" if remote_products else "local-fallback",
+    }
 
 def extract_json(text):
     # Try to find JSON object or array

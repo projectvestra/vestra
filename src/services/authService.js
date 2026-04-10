@@ -21,13 +21,20 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { Platform } from 'react-native';
 
 const expoExtra = Constants.expoConfig?.extra || {};
 const googleWebClientId =
   expoExtra.firebase?.googleWebClientId || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const googleAndroidClientId =
+  expoExtra.firebase?.googleAndroidClientId || process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+const googleIosClientId =
+  expoExtra.firebase?.googleIosClientId || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
 GoogleSignin.configure({
   webClientId: googleWebClientId,
+  androidClientId: googleAndroidClientId,
+  iosClientId: googleIosClientId,
   offlineAccess: true,
 });
 
@@ -203,16 +210,27 @@ export async function loginWithUsername(username, password) {
       return { success: false, message: 'Username and password required.' };
     }
 
-    const userProfiles = collection(db, 'user_profiles');
-    const q = query(userProfiles, where('username', '==', cleanUsername));
-    const querySnapshot = await getDocs(q);
+    let userEmail = null;
 
-    if (querySnapshot.empty) {
-      return { success: false, message: 'Username not found.' };
+    const usernameRef = doc(db, 'usernames', cleanUsername);
+    const usernameSnap = await getDoc(usernameRef);
+    if (usernameSnap.exists()) {
+      const uid = usernameSnap.data()?.userId;
+      if (uid) {
+        const profileSnap = await getDoc(doc(db, 'user_profiles', uid));
+        userEmail = profileSnap.data()?.email || null;
+      }
     }
 
-    const userProfile = querySnapshot.docs[0].data();
-    const userEmail = userProfile.email;
+    if (!userEmail) {
+      const userProfiles = collection(db, 'user_profiles');
+      const q = query(userProfiles, where('username', '==', cleanUsername));
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) {
+        return { success: false, message: 'Username not found.' };
+      }
+      userEmail = querySnapshot.docs[0].data()?.email || null;
+    }
 
     if (!userEmail) {
       return { success: false, message: 'Email not associated with this username.' };
@@ -236,6 +254,13 @@ export async function loginWithUsername(username, password) {
 
 export async function loginWithGoogle() {
   try {
+    if (Platform.OS === 'web') {
+      return {
+        success: false,
+        message: 'Google Sign-In is available in native app builds, not web.',
+      };
+    }
+
     if (!googleWebClientId) {
       return {
         success: false,

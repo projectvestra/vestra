@@ -25,6 +25,20 @@ const SHOE_SIZES_US = ['US 6', 'US 7', 'US 8', 'US 9', 'US 10', 'US 11', 'US 12'
 const SHOE_SIZES_UK = ['UK 5', 'UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11'];
 const SHOE_SIZES_EU = ['EU 38', 'EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44', 'EU 45'];
 const FITS = ['Slim', 'Regular', 'Relaxed', 'Oversized', 'Skinny', 'Straight', 'Wide Leg', 'Tapered'];
+const COLOR_OPTIONS = [
+  { name: 'Black', hex: '#111111' },
+  { name: 'White', hex: '#F5F5F5' },
+  { name: 'Blue', hex: '#2563EB' },
+  { name: 'Navy', hex: '#1E3A8A' },
+  { name: 'Grey', hex: '#6B7280' },
+  { name: 'Brown', hex: '#8B5E3C' },
+  { name: 'Beige', hex: '#D6C4A0' },
+  { name: 'Green', hex: '#16A34A' },
+  { name: 'Red', hex: '#DC2626' },
+  { name: 'Yellow', hex: '#EAB308' },
+  { name: 'Pink', hex: '#DB2777' },
+  { name: 'Purple', hex: '#7C3AED' },
+];
 
 const NO_SIZE_CATEGORIES = ['Sunglasses', 'Accessories'];
 const NO_FIT_CATEGORIES = ['Shoes', 'Sunglasses', 'Accessories'];
@@ -36,6 +50,7 @@ export default function AddItem() {
   const [fit, setFit] = useState(null);
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [selectedColors, setSelectedColors] = useState([COLOR_OPTIONS[0]]);
 
   const isShoe = category === 'Shoes';
   const showSize = !NO_SIZE_CATEGORIES.includes(category);
@@ -58,16 +73,35 @@ export default function AddItem() {
     if (!result.canceled) setImageUri(result.assets[0].uri);
   };
 
+  const toggleColor = (colorOption) => {
+    setSelectedColors((prev) => {
+      const exists = prev.some((color) => color.name === colorOption.name);
+      if (exists) {
+        if (prev.length === 1) return prev;
+        return prev.filter((color) => color.name !== colorOption.name);
+      }
+
+      if (prev.length >= 3) {
+        return [...prev.slice(1), colorOption];
+      }
+
+      return [...prev, colorOption];
+    });
+  };
+
   const handleSave = async () => {
     if (!imageUri) { Alert.alert('Please select an image'); return; }
     setLoading(true);
     try {
       const imageUrl = await uploadWardrobeImage(imageUri);
+      const primaryColor = selectedColors[0] || COLOR_OPTIONS[0];
       await createWardrobeItem({
         imageUrl,
         category,
-        colorName: 'Unknown',
-        colorHex: '#808080',
+        colorName: primaryColor.name,
+        colorHex: primaryColor.hex,
+        colorNames: selectedColors.map((color) => color.name),
+        colorHexes: selectedColors.map((color) => color.hex),
         size: showSize ? size : null,
         fit: showFit ? fit : null,
       });
@@ -183,6 +217,23 @@ export default function AddItem() {
         </>
       )}
 
+      <Text style={styles.sectionTitle}>Colors (pick up to 3)</Text>
+      <View style={styles.row}>
+        {COLOR_OPTIONS.map((colorOption) => {
+          const isSelected = selectedColors.some((color) => color.name === colorOption.name);
+          return (
+            <TouchableOpacity
+              key={colorOption.name}
+              onPress={() => toggleColor(colorOption)}
+              style={[styles.colorChip, isSelected && styles.activeColorChip]}
+            >
+              <View style={[styles.colorDot, { backgroundColor: colorOption.hex }]} />
+              <Text style={isSelected ? styles.activeChipText : styles.chipText}>{colorOption.name}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       {/* Save */}
       <TouchableOpacity
         style={styles.saveButton}
@@ -210,6 +261,25 @@ const styles = StyleSheet.create({
   activeChip: { backgroundColor: '#000' },
   chipText: { color: '#333' },
   activeChipText: { color: '#fff' },
+  colorChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    backgroundColor: '#eee',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  activeColorChip: { backgroundColor: '#000' },
+  colorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    marginRight: 6,
+  },
   imageButton: {
     paddingVertical: 12, backgroundColor: '#f4f4f4',
     borderRadius: 8, marginBottom: 10, alignItems: 'center',

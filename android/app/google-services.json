@@ -12,7 +12,12 @@
           "package_name": "com.anonymous.vestra"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "219404516716-v7h6056denjajcf35o53f6dgv32faafu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBTZP-0lZZGrOBeKOEBn_AorxL9wU2JZ24"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "219404516716-v7h6056denjajcf35o53f6dgv32faafu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

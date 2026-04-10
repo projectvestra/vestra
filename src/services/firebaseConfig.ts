@@ -39,14 +39,22 @@ const app = getApps().length === 0
 
 let auth: Auth;
 if (Platform.OS === 'web') {
-  auth = initializeAuth(app, {
-    persistence: browserLocalPersistence,
-  });
+  try {
+    auth = initializeAuth(app, {
+      persistence: browserLocalPersistence,
+    });
+  } catch {
+    auth = getAuth(app);
+  }
 } else {
   // Use AsyncStorage for persistence on native platforms (iOS/Android)
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
+  try {
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } catch {
+    auth = getAuth(app);
+  }
 }
 
 const db = getFirestore(app);
