@@ -697,7 +697,7 @@ This project is private and maintained by the Vestra team.
 
 **Development Team:**
 - Frontend: React Native/Expo development
-- Backend: AI recommendations with Claude
+- Backend: AI recommendations
 - DevOps: EAS Build, Firebase, deployment
 
 **Technologies:**
