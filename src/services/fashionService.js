@@ -70,6 +70,23 @@ import Constants from 'expo-constants';
 import { mockExploreData } from '../data/mockExploreData';
 
 const BASE_URL = 'https://newsapi.org/v2/everything';
+const FASHION_QUERY = 'fashion OR style OR "fashion week" OR runway OR couture OR streetwear';
+const FASHION_KEYWORDS = [
+  'fashion',
+  'style',
+  'runway',
+  'couture',
+  'fashion week',
+  'streetwear',
+  'designer',
+  'collection',
+  'wardrobe',
+  'apparel',
+  'garment',
+  'lookbook',
+  'haute',
+  'trend',
+];
 
 export async function fetchFashionTrends() {
   try {
@@ -81,7 +98,7 @@ export async function fetchFashionTrends() {
     }
 
     const response = await fetch(
-      `${BASE_URL}?q=fashion&sortBy=publishedAt&language=en&pageSize=10&apiKey=${apiKey}`
+      `${BASE_URL}?q=${encodeURIComponent(FASHION_QUERY)}&searchIn=title,description&sortBy=publishedAt&language=en&pageSize=20&apiKey=${apiKey}`
     );
 
     const data = await response.json();
@@ -90,7 +107,9 @@ export async function fetchFashionTrends() {
       return mockExploreData;
     }
 
-    const normalized = normalizeFashionData(data.articles).filter((article) => Boolean(article.image));
+    const normalized = normalizeFashionData(data.articles)
+      .filter((article) => Boolean(article.image))
+      .filter((article) => isFashionRelevant(article));
 
     return normalized.length > 0 ? normalized : mockExploreData;
   } catch (error) {
@@ -113,4 +132,9 @@ function normalizeFashionData(articles = []) {
       publishedAt: item.publishedAt || '',
       url: item.url,
     }));
+}
+
+function isFashionRelevant(article) {
+  const haystack = `${article.title || ''} ${article.description || ''} ${article.source || ''}`.toLowerCase();
+  return FASHION_KEYWORDS.some((keyword) => haystack.includes(keyword));
 }

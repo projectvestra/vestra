@@ -433,15 +433,16 @@ Color choices: {color_text}
 Pronouns: {pronouns_text}
 
 Write a short profile summary in 1-2 sentences, max 24 words total.
+Start directly with "Prefers ..." and do not use labels like Style/Fit/Color.
 """,
-            system_instruction="You write very short fashion profile summaries. Mention pronouns naturally once and describe style, body shape, and color preference in 1-2 short sentences, no labels.",
+            system_instruction="You write very short fashion profile summaries. Describe style, body shape, and color preference in natural language, no labels.",
             max_output_tokens=80,
             temperature=0.2,
         )
         summary = re.sub(r"\s+", " ", summary)
         return {"summary": summary, "source": "ai", "model": _normalize_gemini_model(os.getenv("GEMINI_MODEL", "gemini-2.0-flash"))}
     except Exception as e:
-        summary = f"{pronouns_text} prefer {style_text.lower()} looks, with a {fit_text.lower()} shape profile and {color_text.lower()} color choices."
+        summary = f"Prefers {style_text.lower()} looks, with a {fit_text.lower()} shape profile and {color_text.lower()} color choices."
         return {"summary": summary, "source": "local-fallback", "error": str(e)}
 
 def _cat(item):
