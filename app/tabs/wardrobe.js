@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getUserWardrobeItems } from '../../src/services/cloudWardrobeService';
 import WardrobeItemCard from '../../src/components/WardrobeItemCard';
 import StyleAssistantModal from '../../src/components/home/StyleAssistantModal';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams } from 'expo-router';
+import { ui } from '../../src/theme/ui';
 
 const CATEGORIES = ['All', 'Shirts', 'Pants', 'Shoes', 'Accessories', 'Jackets', 'Hoodies', 'Sunglasses'];
 
@@ -29,8 +31,10 @@ export default function Wardrobe() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [allItems, setAllItems] = useState([]);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [bannerText, setBannerText] = useState('');
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const params = useLocalSearchParams();
 
 
   const loadData = useCallback(async () => {
@@ -49,7 +53,12 @@ export default function Wardrobe() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+      if (params.toast === 'item-added') {
+        setBannerText('✨ Item added to your wardrobe');
+        const timer = setTimeout(() => setBannerText(''), 1800);
+        return () => clearTimeout(timer);
+      }
+    }, [loadData, params.toast])
   );
 
   // Filter items based on selected category
@@ -63,6 +72,12 @@ export default function Wardrobe() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top}]}>
+      {bannerText ? (
+        <View style={[styles.banner, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.bannerText, { color: theme.text }]}>{bannerText}</Text>
+        </View>
+      ) : null}
+
       <Text style={[styles.title, { color: theme.text }]}>My Wardrobe</Text>
       <Text style={[styles.subtitle, { color: theme.text2 }]}>{allItems.length} items</Text>
 
@@ -140,16 +155,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: ui.type.title,
+    fontWeight: '800',
     marginTop: 16,
+    letterSpacing: -0.4,
   },
   subtitle: {
     fontSize: 14,
     marginTop: 4,
   },
   generateBtn: {
-    borderRadius: 12,
+    borderRadius: ui.radius.md,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 16,
@@ -157,7 +173,7 @@ const styles = StyleSheet.create({
   },
   generateBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
   categories: {
@@ -176,7 +192,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   activeCategoryText: {
-    fontWeight: '600',
+    fontWeight: '700',
   },
   filterCount: {
     fontSize: 12,
@@ -194,5 +210,17 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  banner: {
+    marginTop: 8,
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: ui.radius.md,
+  },
+  bannerText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

@@ -3,29 +3,29 @@ import { auth, db } from '../services/firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 export const lightTheme = {
-  bg: '#ffffff',
-  bg2: '#f8f8f8',
-  bg3: '#f0f0f0',
-  text: '#111111',
-  text2: '#555555',
-  text3: '#999999',
-  icon: '#687076',
-  border: '#e5e5e5',
-  tint: '#0a7ea4',
-  card: '#f4f4f4',
+  bg: '#f7f7f4',
+  bg2: '#ffffff',
+  bg3: '#efefea',
+  text: '#121214',
+  text2: '#55585f',
+  text3: '#8b8f97',
+  icon: '#5f6670',
+  border: '#e8e8e2',
+  tint: '#2563eb',
+  card: '#ffffff',
 };
 
 export const darkTheme = {
-  bg: '#0f0f11',
-  bg2: '#1a1a22',
-  bg3: '#252530',
-  text: '#f0f0f0',
-  text2: '#aaaaaa',
-  text3: '#666666',
-  icon: '#9BA1A6',
-  border: '#2a2a35',
-  tint: '#38bdf8',
-  card: '#1e1e28',
+  bg: '#0b0c0f',
+  bg2: '#14161b',
+  bg3: '#1c1f26',
+  text: '#f5f7fb',
+  text2: '#a5adba',
+  text3: '#7a8392',
+  icon: '#a7b0bc',
+  border: '#242935',
+  tint: '#60a5fa',
+  card: '#13151a',
 };
 
 const ThemeContext = createContext({
@@ -41,7 +41,14 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     setIsDark(false);
 
+    let unsubscribeDoc = null;
+
     const unsubscribeAuth = auth.onAuthStateChanged(user => {
+      if (unsubscribeDoc) {
+        unsubscribeDoc();
+        unsubscribeDoc = null;
+      }
+
       if (!user) {
         setIsDark(false);
         return;
@@ -49,11 +56,11 @@ export function ThemeProvider({ children }) {
 
       // Listen to Firestore for dark mode preference
       const ref = doc(db, 'user_profiles', user.uid);
-      const unsubscribeDoc = onSnapshot(ref, snap => {
+      unsubscribeDoc = onSnapshot(ref, snap => {
         setIsDark(snap.exists() ? snap.data().darkMode || false : false);
       });
-      return unsubscribeDoc;
     });
+
     return unsubscribeAuth;
   }, []);
 

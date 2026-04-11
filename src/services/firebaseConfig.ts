@@ -6,7 +6,7 @@ import {
   browserLocalPersistence,
   type Auth,
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // @ts-ignore
@@ -57,5 +57,7 @@ if (Platform.OS === 'web') {
   }
 }
 
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+});
 export { auth, db };

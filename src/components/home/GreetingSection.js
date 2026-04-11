@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useEffect, useState } from 'react';
 import { auth } from '../../services/firebaseConfig';
 import { useTheme } from '../../context/ThemeContext';
+import { ui } from '../../theme/ui';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -34,17 +35,18 @@ export default function GreetingSection({ totalItems, recentItem }) {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg2, borderColor: theme.border }]}> 
+      <Text style={[styles.eyebrow, { color: theme.text2 }]}>Wardrobe snapshot</Text>
       <Text style={[styles.greeting, { color: theme.text }]}>
-        {getGreeting()}, {userName} 👋
+        {getGreeting()}, {userName}
       </Text>
-      <View style={[styles.summaryBox, { backgroundColor: theme.card }]}>
+      <View style={[styles.summaryBox, { backgroundColor: theme.bg, borderColor: theme.border }]}>
         <Text style={[styles.summaryText, { color: theme.text2 }]}>
-          {totalItems} items in your wardrobe
+          {totalItems} pieces in your wardrobe
         </Text>
         {recentItem && (
           <Text style={[styles.summaryText, { color: theme.text2 }]}>
-            Recently Added: {recentItem.name || recentItem.category}
+            Recent: {recentItem.name || recentItem.category}
           </Text>
         )}
       </View>
@@ -53,8 +55,34 @@ export default function GreetingSection({ totalItems, recentItem }) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginTop: 20 },
-  greeting: { fontSize: 24, fontWeight: '600' },
-  summaryBox: { marginTop: 10, padding: 14, borderRadius: 12 },
-  summaryText: { fontSize: 14, marginBottom: 4 },
+  container: {
+    marginTop: ui.spacing.lg,
+    padding: ui.spacing.md,
+    borderRadius: ui.radius.lg,
+    borderWidth: 1,
+    ...ui.shadow.card,
+  },
+  eyebrow: {
+    fontSize: ui.type.eyebrow,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  greeting: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  summaryBox: {
+    marginTop: ui.spacing.sm,
+    padding: ui.spacing.md,
+    borderRadius: ui.radius.md,
+    borderWidth: 1,
+  },
+  summaryText: {
+    fontSize: 14,
+    marginBottom: 4,
+    lineHeight: 20,
+  },
 });

@@ -7,6 +7,7 @@ import { isOnboardingCompleted } from '../src/services/userPreferencesService';
 import { OnboardingProvider } from '../src/context/OnboardingContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { StatusBar } from 'expo-status-bar';
+import { ensureNotificationPermissionPrompted } from '../src/services/notificationPermissionService';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -24,6 +25,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    ensureNotificationPermissionPrompted();
+  }, []);
+
+  useEffect(() => {
     const checkNavigation = async () => {
       if (loading) return;
       if (hasNavigated.current) return;
@@ -36,7 +41,7 @@ export default function RootLayout() {
 
       try {
         const completion = await getProfileCompletionStatus(user.uid);
-        if (!completion.hasUsername) {
+        if (!completion.hasUsername && completion.authProvider === 'google.com') {
           router.replace('/auth/complete-profile');
           return;
         }

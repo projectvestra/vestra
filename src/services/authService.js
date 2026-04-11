@@ -4,11 +4,15 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  updatePassword,
   deleteUser,
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithCredential,
+  EmailAuthProvider,
+  linkWithCredential,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
 import {
   collection,
@@ -26,17 +30,19 @@ import { Platform } from 'react-native';
 const expoExtra = Constants.expoConfig?.extra || {};
 const googleWebClientId =
   expoExtra.firebase?.googleWebClientId || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-const googleAndroidClientId =
-  expoExtra.firebase?.googleAndroidClientId || process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 const googleIosClientId =
   expoExtra.firebase?.googleIosClientId || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
-GoogleSignin.configure({
+const googleSignInConfig = {
   webClientId: googleWebClientId,
-  androidClientId: googleAndroidClientId,
-  iosClientId: googleIosClientId,
   offlineAccess: true,
-});
+};
+
+if (Platform.OS === 'ios' && googleIosClientId) {
+  googleSignInConfig.iosClientId = googleIosClientId;
+}
+
+GoogleSignin.configure(googleSignInConfig);
 
 function sanitizeUsername(username) {
   return (username || '').toLowerCase().trim();
@@ -59,9 +65,13 @@ async function syncProfileFromUser(user) {
   const profileSnap = await getDoc(profileRef);
 
   const displayName = user.displayName || deriveDisplayNameFromEmail(user.email || '');
+  const providerId = user.providerData?.[0]?.providerId || 'password';
+  const profileSetupComplete = providerId !== 'google.com';
   const patch = {
     email: user.email || '',
     displayName,
+    authProvider: providerId,
+    profileSetupComplete,
     updatedAt: new Date().toISOString(),
   };
 
@@ -70,6 +80,7 @@ async function syncProfileFromUser(user) {
       ...patch,
       username: null,
       createdAt: new Date().toISOString(),
+      onboardingCompleted: false,
     });
     return;
   }
@@ -79,6 +90,13 @@ async function syncProfileFromUser(user) {
 
   if (!existing.email && patch.email) mergePatch.email = patch.email;
   if (!existing.displayName && patch.displayName) mergePatch.displayName = patch.displayName;
+  if (!existing.authProvider && patch.authProvider) mergePatch.authProvider = patch.authProvider;
+  if (existing.username && existing.profileSetupComplete !== true) {
+    mergePatch.profileSetupComplete = true;
+  }
+  if (existing.profileSetupComplete !== true && patch.profileSetupComplete === true) {
+    mergePatch.profileSetupComplete = true;
+  }
   if (Object.keys(mergePatch).length > 0) {
     await setDoc(profileRef, { ...mergePatch, updatedAt: patch.updatedAt }, { merge: true });
   }
@@ -145,6 +163,9 @@ export async function registerWithEmail(name, email, password, username) {
           displayName: name,
           email,
           username: cleanUsername,
+          authProvider: 'password',
+          profileSetupComplete: true,
+          onboardingCompleted: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
@@ -291,12 +312,14 @@ export async function loginWithGoogle() {
     const profileRef = doc(db, 'user_profiles', user.uid);
     const refreshedProfile = await getDoc(profileRef);
     const hasUsername = Boolean(refreshedProfile.data()?.username);
+    const profileSetupComplete = Boolean(refreshedProfile.data()?.profileSetupComplete || hasUsername);
 
     return {
       success: true,
       message: 'Google login successful',
       user,
       requiresUsername: !hasUsername,
+      requiresProfileSetup: !profileSetupComplete,
     };
   } catch (error) {
     console.log('GOOGLE LOGIN ERROR:', error);
@@ -328,19 +351,77 @@ export function listenToAuthState(callback) {
 
 export async function getProfileCompletionStatus(uid) {
   try {
-    if (!uid) return { hasUsername: false };
+    if (!uid) return { hasUsername: false, profileSetupComplete: false };
 
     const profileSnap = await getDoc(doc(db, 'user_profiles', uid));
 
     if (!profileSnap.exists()) {
-      return { hasUsername: false };
+      return { hasUsername: false, profileSetupComplete: false };
     }
 
     const data = profileSnap.data() || {};
     return {
       hasUsername: Boolean(data.username),
+      profileSetupComplete: data.profileSetupComplete === true || Boolean(data.username),
+      authProvider: data.authProvider || 'password',
     };
   } catch {
-    return { hasUsername: false };
+    return { hasUsername: false, profileSetupComplete: false };
+  }
+}
+
+export async function changeCurrentUserPassword(currentPassword, newPassword) {
+  const user = auth.currentUser;
+
+  if (!user || !user.email || !currentPassword || !newPassword) {
+    return {
+      success: false,
+      message: 'Current password, new password, and email are required.',
+    };
+  }
+
+  try {
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Failed to change password.',
+    };
+  }
+}
+
+export async function linkEmailPasswordToCurrentUser(password) {
+  const user = auth.currentUser;
+  if (!user || !user.email || !password) {
+    return {
+      success: false,
+      message: 'Email and password are required to set a password.',
+    };
+  }
+
+  try {
+    const credential = EmailAuthProvider.credential(user.email, password);
+    await linkWithCredential(user, credential);
+
+    await setDoc(
+      doc(db, 'user_profiles', user.uid),
+      {
+        profileSetupComplete: true,
+        authProvider: user.providerData?.[0]?.providerId || 'google.com',
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Failed to set password.',
+    };
   }
 }

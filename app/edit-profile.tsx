@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput,
-  TouchableOpacity, ScrollView, Switch,
+  TouchableOpacity, ScrollView, Image,
   Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { auth, db } from '../src/services/firebaseConfig';
 import { useTheme } from '../src/context/ThemeContext';
 import { updateProfile } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { isUsernameTaken, claimUsername } from '../src/services/usernameService';
-import { getUserProfile } from '../src/services/userService';
+import { uploadWardrobeImage } from '../src/services/cloudWardrobeService';
+import { ui } from '../src/theme/ui';
 
 const STYLE_OPTIONS = ['Casual', 'Formal', 'Streetwear', 'Minimalist', 'Bohemian', 'Sporty', 'Vintage'];
 const COLOR_OPTIONS = ['Black', 'White', 'Navy', 'Grey', 'Beige', 'Brown', 'Red', 'Green', 'Blue'];
@@ -28,18 +31,14 @@ export default function EditProfile() {
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [originalUsername, setOriginalUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [bannerImageUrl, setBannerImageUrl] = useState('');
 
   // Preferences
   const [height, setHeight] = useState('');
   const [bodyType, setBodyType] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-
-  // Settings
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
 
   useEffect(() => {
     loadProfile();
@@ -64,8 +63,8 @@ export default function EditProfile() {
         setBodyType(data.bodyType || '');
         setSelectedStyles(data.styles || []);
         setSelectedColors(data.preferredColors || []);
-        setDarkMode(data.darkMode || false);
-        setNotifications(data.notifications !== false);
+        setPhotoUrl(data.photoUrl || '');
+        setBannerImageUrl(data.bannerImageUrl || '');
       }
     } catch (e) {
       console.log('Load profile error:', e);
@@ -110,21 +109,49 @@ export default function EditProfile() {
       await setDoc(doc(db, 'user_profiles', user.uid), {
         username,
         displayName,
+        photoUrl,
+        bannerImageUrl,
         height: height ? parseInt(height) : null,
         bodyType,
         styles: selectedStyles,
         preferredColors: selectedColors,
-        darkMode,
-        notifications,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
 
-      Alert.alert('Saved', 'Profile updated successfully');
-      router.back();
+      router.replace({ pathname: '/tabs/profile', params: { toast: 'profile-saved' } });
     } catch (e: any) {
       Alert.alert('Error', e.message);
     }
     setSaving(false);
+  };
+
+  const pickProfileMedia = async (kind: 'photo' | 'banner') => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Gallery permission is required to pick images.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+
+    try {
+      setSaving(true);
+      const uploadedUrl = await uploadWardrobeImage(result.assets[0].uri);
+      if (kind === 'photo') {
+        setPhotoUrl(uploadedUrl);
+      } else {
+        setBannerImageUrl(uploadedUrl);
+      }
+    } catch (error: any) {
+      Alert.alert('Upload failed', error?.message || 'Could not upload image.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -139,16 +166,12 @@ export default function EditProfile() {
     <ScrollView style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => {
-          // Check for changes
           const hasChanges = displayName !== (auth.currentUser?.displayName || '') ||
             username !== originalUsername ||
-            newPassword !== '' ||
             height !== '' ||
             bodyType !== '' ||
             selectedStyles.length > 0 ||
-            selectedColors.length > 0 ||
-            darkMode !== false ||
-            notifications !== true;
+            selectedColors.length > 0;
           if (hasChanges) {
             Alert.alert(
               'Unsaved Changes',
@@ -171,6 +194,39 @@ export default function EditProfile() {
       {/* Basic Info */}
       <Text style={[styles.sectionTitle, { color: theme.text } ]}>Basic Info</Text>
 
+      <Text style={[styles.label, { color: theme.text2 }]}>Profile Photo</Text>
+      <View style={styles.photoCenterWrap}>
+        <TouchableOpacity
+          onPress={() => pickProfileMedia('photo')}
+          style={[styles.photoPickerBtn, { borderColor: theme.border, backgroundColor: theme.bg2 }]}
+        >
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={styles.photoPreview} resizeMode="cover" />
+          ) : (
+            <Text style={[styles.photoInitialText, { color: theme.text }]}> 
+              {(displayName?.charAt(0) || auth.currentUser?.displayName?.charAt(0) || 'U').toUpperCase()}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <Text style={[styles.label, { color: theme.text2 }]}>Profile Banner</Text>
+      <TouchableOpacity
+        onPress={() => pickProfileMedia('banner')}
+        style={[styles.mediaPickerBtn, { borderColor: theme.border, backgroundColor: theme.bg2 }]}
+      >
+        {bannerImageUrl ? (
+          <Image source={{ uri: bannerImageUrl }} style={styles.bannerPreview} resizeMode="cover" />
+        ) : (
+          <LinearGradient
+            colors={theme.bg === '#0b0c0f' ? ['#0d1017', '#161a24', '#1d2430'] : ['#ffffff', '#f7f7f4', '#ecece6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.bannerPreview}
+          />
+        )}
+      </TouchableOpacity>
+
       <Text style={[styles.label, { color: theme.text2 }]}>Display Name</Text>
       <TextInput
         style={[styles.input, { backgroundColor: theme.bg2, borderColor: theme.border, color: theme.text }]}
@@ -189,21 +245,6 @@ export default function EditProfile() {
         placeholderTextColor="#999"
         autoCapitalize="none"
       />
-
-      <Text style={[styles.label, { color: theme.text2 }]}>New Password (leave blank to keep current)</Text>
-      <View style={[styles.passwordWrapper, { backgroundColor: theme.bg2, borderColor: theme.border }] }>
-        <TextInput
-          style={[styles.passwordInput, { color: theme.text }]}
-          value={newPassword}
-          onChangeText={setNewPassword}
-          placeholder="New password"
-          placeholderTextColor="#999"
-          secureTextEntry={!showPassword}
-        />
-        <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(v => !v)}>
-          <Text style={[styles.eyeIcon, { color: theme.text2 }]}>{showPassword ? '🙈' : '👁'}</Text>
-        </TouchableOpacity>
-      </View>
 
       <Text style={[styles.label, { color: theme.text2 }]}>Height (cm)</Text>
       <TextInput
@@ -224,14 +265,12 @@ export default function EditProfile() {
             style={[
               styles.chip,
               { backgroundColor: bodyType === bt ? theme.tint : theme.bg2, borderColor: theme.border },
-              bodyType === bt && styles.chipActive,
             ]}
             onPress={() => setBodyType(bt)}
           >
             <Text style={[
               styles.chipText,
               { color: bodyType === bt ? theme.bg : theme.text },
-              bodyType === bt && styles.chipTextActive,
             ]}>
               {bt}
             </Text>
@@ -248,14 +287,12 @@ export default function EditProfile() {
             style={[
               styles.chip,
               { backgroundColor: selectedStyles.includes(s) ? theme.tint : theme.bg2, borderColor: theme.border },
-              selectedStyles.includes(s) && styles.chipActive,
             ]}
             onPress={() => toggleStyle(s)}
           >
             <Text style={[
               styles.chipText,
               { color: selectedStyles.includes(s) ? theme.bg : theme.text },
-              selectedStyles.includes(s) && styles.chipTextActive,
             ]}>
               {s}
             </Text>
@@ -272,48 +309,17 @@ export default function EditProfile() {
             style={[
               styles.chip,
               { backgroundColor: selectedColors.includes(c) ? theme.tint : theme.bg2, borderColor: theme.border },
-              selectedColors.includes(c) && styles.chipActive,
             ]}
             onPress={() => toggleColor(c)}
           >
             <Text style={[
               styles.chipText,
               { color: selectedColors.includes(c) ? theme.bg : theme.text },
-              selectedColors.includes(c) && styles.chipTextActive,
             ]}>
               {c}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
-
-      {/* Settings */}
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>Settings</Text>
-
-      <View style={styles.settingRow}>
-        <View>
-          <Text style={[styles.settingLabel, { color: theme.text }]}>Dark Mode</Text>
-          <Text style={[styles.settingSubLabel, { color: theme.text2 }]}>Switch to dark theme</Text>
-        </View>
-        <Switch
-          value={darkMode}
-          onValueChange={setDarkMode}
-          trackColor={{ false: theme.bg2, true: theme.tint }}
-          thumbColor={theme.bg}
-        />
-      </View>
-
-      <View style={styles.settingRow}>
-        <View>
-          <Text style={[styles.settingLabel, { color: theme.text }]}>Notifications</Text>
-          <Text style={[styles.settingSubLabel, { color: theme.text2 }]}>Outfit reminders & updates</Text>
-        </View>
-        <Switch
-          value={notifications}
-          onValueChange={setNotifications}
-          trackColor={{ false: theme.bg2, true: theme.tint }}
-          thumbColor={theme.bg}
-        />
       </View>
 
       {/* Save Button */}
@@ -334,48 +340,67 @@ export default function EditProfile() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, padding: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   closeBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   closeText: { fontSize: 18 },
-  title: { fontSize: 22, fontWeight: '600' },
-  sectionTitle: { fontSize: 15, fontWeight: '600', marginTop: 24, marginBottom: 12 },
-  label: { fontSize: 13, marginBottom: 6 },
+  title: { fontSize: ui.type.title, fontWeight: '800', letterSpacing: -0.4 },
+  sectionTitle: { fontSize: 15, fontWeight: '800', marginTop: 24, marginBottom: 12, letterSpacing: -0.2 },
+  label: { fontSize: 12, marginBottom: 6, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   input: {
-    borderWidth: 1, borderRadius: 10,
+    borderWidth: 1, borderRadius: ui.radius.md,
     paddingVertical: 12, paddingHorizontal: 14,
     fontSize: 15, marginBottom: 14,
   },
-  passwordWrapper: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderRadius: 10,
+  mediaPickerBtn: {
+    borderWidth: 1,
+    borderRadius: ui.radius.md,
+    height: 120,
     marginBottom: 14,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  passwordInput: {
-    flex: 1, paddingVertical: 12, paddingHorizontal: 14,
-    fontSize: 15,
+  bannerPreview: {
+    width: '100%',
+    height: '100%',
   },
-  eyeBtn: { paddingHorizontal: 14 },
-  eyeIcon: { fontSize: 18 },
+  photoPickerBtn: {
+    borderWidth: 1,
+    borderRadius: 42,
+    width: 84,
+    height: 84,
+    marginBottom: 14,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  mediaPickerText: {
+    fontSize: 12,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+  },
+  photoCenterWrap: {
+    alignItems: 'center',
+  },
+  photoInitialText: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    paddingVertical: 6, paddingHorizontal: 14,
-    borderRadius: 20,
+    paddingVertical: 7, paddingHorizontal: 14,
+    borderRadius: ui.radius.pill,
     borderWidth: 1, marginBottom: 4,
   },
-  chipActive: {},
-  chipText: { fontSize: 13 },
-  chipTextActive: { fontSize: 13 },
-  settingRow: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14, borderBottomWidth: 1,
-  },
-  settingLabel: { fontSize: 15, fontWeight: '500' },
-  settingSubLabel: { fontSize: 12, marginTop: 2 },
+  chipText: { fontSize: 12, fontWeight: '600' },
   saveButton: {
-    borderRadius: 12,
+    borderRadius: ui.radius.md,
     paddingVertical: 16, alignItems: 'center', marginTop: 28,
   },
-  saveButtonText: { fontSize: 16, fontWeight: '600' },
+  saveButtonText: { fontSize: 16, fontWeight: '800' },
 });

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { deleteWardrobeItemCloud, updateWardrobeItem } from '../services/cloudWardrobeService';
 import { getShoppingLinks } from '../services/shopSearchService';
+import { ui } from '../theme/ui';
 
 const CATEGORIES = ['Shirts', 'Pants', 'Shoes', 'Accessories'];
 const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -115,8 +116,10 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
           onPress={openCard}
         >
           <Image source={{ uri: item.image }} style={styles.image} />
-          <Text style={styles.name} numberOfLines={1}>{item.name || item.category}</Text>
-          {item.size && <Text style={styles.sizeTag}>{item.size}</Text>}
+          <View style={styles.cardMeta}>
+            <Text style={styles.name} numberOfLines={1}>{item.name || item.category}</Text>
+            {item.size ? <Text style={styles.sizeTag}>{item.size}</Text> : null}
+          </View>
         </TouchableOpacity>
       </Animated.View>
 
@@ -164,7 +167,7 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
                   </View>
 
                   <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-                    <Text style={{ color: '#fff' }}>Delete</Text>
+                    <Text style={{ color: '#fff', fontWeight: '700' }}>Delete</Text>
                   </TouchableOpacity>
                 </ScrollView>
               )}
@@ -305,24 +308,30 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#f8f8f8',
-    borderRadius: 12,
+    borderRadius: ui.radius.lg,
     padding: 8,
+    ...ui.shadow.card,
   },
   image: {
     width: '100%',
-    height: 120,
-    borderRadius: 10,
+    height: 124,
+    borderRadius: ui.radius.md,
+  },
+  cardMeta: {
+    marginTop: 8,
+    gap: 4,
   },
   name: {
-    marginTop: 8,
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 13,
     color: '#111',
   },
   sizeTag: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#888',
-    marginTop: 2,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   overlay: {
     flex: 1,
@@ -334,18 +343,18 @@ const styles = StyleSheet.create({
     width: '88%',
     maxHeight: '85%',
     backgroundColor: '#fff',
-    borderRadius: 18,
+    borderRadius: ui.radius.xl,
     padding: 18,
   },
   largeImage: {
     width: '100%',
     height: 220,
-    borderRadius: 14,
+    borderRadius: ui.radius.lg,
   },
   title: {
     marginTop: 14,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '800',
     color: '#111',
   },
   metaRow: {
@@ -363,6 +372,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: '#555',
     fontSize: 14,
+    lineHeight: 20,
   },
   paletteRow: {
     flexDirection: 'row',
@@ -384,7 +394,7 @@ const styles = StyleSheet.create({
   editButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: ui.radius.md,
     borderWidth: 1.5,
     borderColor: '#000',
     alignItems: 'center',
@@ -397,7 +407,7 @@ const styles = StyleSheet.create({
   shopButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: ui.radius.md,
     backgroundColor: '#000',
     alignItems: 'center',
   },
@@ -411,14 +421,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff3b30',
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: ui.radius.md,
   },
   sectionLabel: {
     marginTop: 16,
     marginBottom: 8,
-    fontWeight: '600',
-    fontSize: 13,
+    fontWeight: '700',
+    fontSize: 12,
     color: '#333',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   subLabel: {
     fontSize: 11,
@@ -434,7 +446,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingVertical: 5,
     paddingHorizontal: 11,
-    borderRadius: 20,
+    borderRadius: ui.radius.pill,
     backgroundColor: '#f0f0f0',
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -455,7 +467,7 @@ const styles = StyleSheet.create({
   shopPreviewImg: {
     width: '100%',
     height: 160,
-    borderRadius: 12,
+    borderRadius: ui.radius.lg,
     marginTop: 12,
   },
   shopItemName: {
@@ -469,7 +481,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: ui.radius.md,
     padding: 14,
     marginTop: 10,
   },

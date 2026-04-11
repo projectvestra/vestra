@@ -1,12 +1,20 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity, Modal } from 'react-native';
 import { useState } from 'react';
+import { useTheme } from '../../context/ThemeContext';
+import { ui } from '../../theme/ui';
 
 export default function TodayOutfitCard({ outfit }) {
   const [visible, setVisible] = useState(false);
+  const { theme } = useTheme();
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Today Outfit</Text>
+    <View style={[styles.card, { backgroundColor: theme.bg2, borderColor: theme.border }]}>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={[styles.eyebrow, { color: theme.text2 }]}>Recommended fit</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Today&apos;s Outfit</Text>
+        </View>
+      </View>
 
       <View style={styles.row}>
         {outfit.shirt && (
@@ -21,21 +29,22 @@ export default function TodayOutfitCard({ outfit }) {
       </View>
 
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, { backgroundColor: theme.tint }]}
         onPress={() => setVisible(true)}
       >
-        <Text style={{ color: '#fff' }}>Why this outfit?</Text>
+        <Text style={[styles.buttonText, { color: theme.bg }]}>Why this outfit?</Text>
       </TouchableOpacity>
 
       <Modal visible={visible} transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text>{outfit.explanation}</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.bg2, borderColor: theme.border }]}> 
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Style note</Text>
+            <Text style={[styles.modalText, { color: theme.text2 }]}>{outfit.explanation}</Text>
             <TouchableOpacity
-              style={styles.closeBtn}
+              style={[styles.closeBtn, { backgroundColor: theme.tint }]}
               onPress={() => setVisible(false)}
             >
-              <Text style={{ color: '#fff' }}>Close</Text>
+              <Text style={[styles.closeBtnText, { color: theme.bg }]}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -46,32 +55,37 @@ export default function TodayOutfitCard({ outfit }) {
 
 const styles = StyleSheet.create({
   card: {
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: '#f4f4f4',
-    borderRadius: 16,
+    marginTop: ui.spacing.xl,
+    padding: ui.spacing.md,
+    borderRadius: ui.radius.lg,
+    borderWidth: 1,
+    ...ui.shadow.card,
   },
+  headerRow: { marginBottom: ui.spacing.md },
+  eyebrow: { fontSize: ui.type.eyebrow, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontSize: ui.type.section,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 8,
   },
   image: {
-    width: 90,
-    height: 120,
-    borderRadius: 10,
+    width: '31%',
+    height: 124,
+    borderRadius: ui.radius.md,
+    backgroundColor: '#e5e7eb',
   },
   button: {
-    marginTop: 16,
-    backgroundColor: '#000',
-    paddingVertical: 10,
+    marginTop: ui.spacing.md,
+    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: ui.radius.md,
   },
+  buttonText: { fontSize: 14, fontWeight: '700' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -79,16 +93,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: '#fff',
+    width: '84%',
     padding: 20,
-    borderRadius: 12,
+    borderRadius: ui.radius.lg,
+    borderWidth: 1,
   },
+  modalTitle: { fontSize: 16, fontWeight: '800', marginBottom: 6 },
+  modalText: { fontSize: 14, lineHeight: 21 },
   closeBtn: {
-    marginTop: 14,
-    backgroundColor: '#000',
-    padding: 10,
+    marginTop: 16,
+    padding: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: ui.radius.md,
+  },
+  closeBtnText: {
+    fontWeight: '700',
   },
 });

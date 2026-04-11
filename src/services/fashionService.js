@@ -90,7 +90,7 @@ export async function fetchFashionTrends() {
       return mockExploreData;
     }
 
-    const normalized = normalizeFashionData(data.articles);
+    const normalized = normalizeFashionData(data.articles).filter((article) => Boolean(article.image));
 
     return normalized.length > 0 ? normalized : mockExploreData;
   } catch (error) {
@@ -103,7 +103,7 @@ export async function fetchFashionTrends() {
 
 function normalizeFashionData(articles = []) {
   return articles
-    .filter((item) => item.title && item.url)
+    .filter((item) => item.title && item.url && item.urlToImage)
     .map((item, index) => ({
       id: item.url || `fashion-${index}`,
       title: item.title,
