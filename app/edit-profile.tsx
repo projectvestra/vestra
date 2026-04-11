@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, TextInput,
   TouchableOpacity, ScrollView, Image,
@@ -26,6 +26,8 @@ export default function EditProfile() {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   // Basic info
   const [displayName, setDisplayName] = useState('');
@@ -39,6 +41,38 @@ export default function EditProfile() {
   const [bodyType, setBodyType] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const initialSnapshotRef = useRef<string>('');
+
+  const normalizeArray = (arr: string[]) => [...arr].map(v => v.trim()).filter(Boolean).sort();
+
+  const buildSnapshot = (overrides?: {
+    displayName?: string;
+    username?: string;
+    height?: string;
+    bodyType?: string;
+    selectedStyles?: string[];
+    selectedColors?: string[];
+    photoUrl?: string;
+    bannerImageUrl?: string;
+  }) => {
+    const snapshot = {
+      displayName: (overrides?.displayName ?? displayName).trim(),
+      username: (overrides?.username ?? username).trim().toLowerCase(),
+      height: (overrides?.height ?? height).trim(),
+      bodyType: (overrides?.bodyType ?? bodyType).trim(),
+      selectedStyles: normalizeArray(overrides?.selectedStyles ?? selectedStyles),
+      selectedColors: normalizeArray(overrides?.selectedColors ?? selectedColors),
+      photoUrl: (overrides?.photoUrl ?? photoUrl).trim(),
+      bannerImageUrl: (overrides?.bannerImageUrl ?? bannerImageUrl).trim(),
+    };
+    return JSON.stringify(snapshot);
+  };
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!initialSnapshotRef.current) return false;
+    return buildSnapshot() !== initialSnapshotRef.current;
+  }, [displayName, username, height, bodyType, selectedStyles, selectedColors, photoUrl, bannerImageUrl]);
+  const isBusy = saving || uploadingPhoto || uploadingBanner;
 
   useEffect(() => {
     loadProfile();
@@ -50,21 +84,60 @@ export default function EditProfile() {
       const user = auth.currentUser;
       if (!user) return;
 
-      setDisplayName(user.displayName || '');
+      const initialDisplayName = user.displayName || '';
+      setDisplayName(initialDisplayName);
 
       // Load from Firestore
       const ref = doc(db, 'user_profiles', user.uid);
       const snap = await getDoc(ref);
       if (snap.exists()) {
         const data = snap.data();
-        setUsername(data.username || '');
-        setOriginalUsername(data.username || '');
-        setHeight(data.height?.toString() || '');
-        setBodyType(data.bodyType || '');
-        setSelectedStyles(data.styles || []);
-        setSelectedColors(data.preferredColors || []);
-        setPhotoUrl(data.photoUrl || '');
-        setBannerImageUrl(data.bannerImageUrl || '');
+        const initialUsername = data.username || '';
+        const initialHeight = data.height?.toString() || '';
+        const initialBodyType = data.bodyType || '';
+        const initialStyles = data.styles || [];
+        const initialColors = data.preferredColors || [];
+        const initialPhotoUrl = data.photoUrl || '';
+        const initialBannerImageUrl = data.bannerImageUrl || '';
+
+        setUsername(initialUsername);
+        setOriginalUsername(initialUsername);
+        setHeight(initialHeight);
+        setBodyType(initialBodyType);
+        setSelectedStyles(initialStyles);
+        setSelectedColors(initialColors);
+        setPhotoUrl(initialPhotoUrl);
+        setBannerImageUrl(initialBannerImageUrl);
+
+        initialSnapshotRef.current = buildSnapshot({
+          displayName: initialDisplayName,
+          username: initialUsername,
+          height: initialHeight,
+          bodyType: initialBodyType,
+          selectedStyles: initialStyles,
+          selectedColors: initialColors,
+          photoUrl: initialPhotoUrl,
+          bannerImageUrl: initialBannerImageUrl,
+        });
+      } else {
+        setUsername('');
+        setOriginalUsername('');
+        setHeight('');
+        setBodyType('');
+        setSelectedStyles([]);
+        setSelectedColors([]);
+        setPhotoUrl('');
+        setBannerImageUrl('');
+        initialSnapshotRef.current = buildSnapshot({
+          displayName: initialDisplayName,
+          username: '',
+          height: '',
+          bodyType: '',
+          selectedStyles: [],
+          selectedColors: [],
+          photoUrl: '',
+          bannerImageUrl: '',
+        });
       }
     } catch (e) {
       console.log('Load profile error:', e);
@@ -87,28 +160,38 @@ export default function EditProfile() {
   const handleSave = async () => {
     const user = auth.currentUser;
     if (!user) return;
+
+    if (!hasUnsavedChanges) {
+      router.back();
+      return;
+    }
+
     setSaving(true);
 
     try {
+      const trimmedDisplayName = displayName.trim();
+      const trimmedUsername = username.trim().toLowerCase();
+
       // Update Firebase Auth display name
-      if (displayName !== user.displayName) {
-        await updateProfile(user, { displayName });
+      if (trimmedDisplayName !== (user.displayName || '').trim()) {
+        await updateProfile(user, { displayName: trimmedDisplayName });
       }
 
-      if (username && username !== originalUsername) {
-        const taken = await isUsernameTaken(username);
+      if (trimmedUsername && trimmedUsername !== originalUsername.trim().toLowerCase()) {
+        const taken = await isUsernameTaken(trimmedUsername);
         if (taken) {
           Alert.alert('Username taken', 'Please choose a different username');
           setSaving(false);
           return;
         }
-        await claimUsername(user.uid, username, originalUsername);
+        await claimUsername(user.uid, trimmedUsername, originalUsername);
+        setOriginalUsername(trimmedUsername);
       }
 
       // Save everything to Firestore
       await setDoc(doc(db, 'user_profiles', user.uid), {
-        username,
-        displayName,
+        username: trimmedUsername,
+        displayName: trimmedDisplayName,
         photoUrl,
         bannerImageUrl,
         height: height ? parseInt(height) : null,
@@ -118,6 +201,16 @@ export default function EditProfile() {
         updatedAt: new Date().toISOString(),
       }, { merge: true });
 
+      initialSnapshotRef.current = buildSnapshot({
+        displayName: trimmedDisplayName,
+        username: trimmedUsername,
+        height,
+        bodyType,
+        selectedStyles,
+        selectedColors,
+        photoUrl,
+        bannerImageUrl,
+      });
       router.replace({ pathname: '/tabs/profile', params: { toast: 'profile-saved' } });
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -140,7 +233,11 @@ export default function EditProfile() {
     if (result.canceled || !result.assets?.[0]?.uri) return;
 
     try {
-      setSaving(true);
+      if (kind === 'photo') {
+        setUploadingPhoto(true);
+      } else {
+        setUploadingBanner(true);
+      }
       const uploadedUrl = await uploadWardrobeImage(result.assets[0].uri);
       if (kind === 'photo') {
         setPhotoUrl(uploadedUrl);
@@ -150,8 +247,20 @@ export default function EditProfile() {
     } catch (error: any) {
       Alert.alert('Upload failed', error?.message || 'Could not upload image.');
     } finally {
-      setSaving(false);
+      if (kind === 'photo') {
+        setUploadingPhoto(false);
+      } else {
+        setUploadingBanner(false);
+      }
     }
+  };
+
+  const clearProfileMedia = (kind: 'photo' | 'banner') => {
+    if (kind === 'photo') {
+      setPhotoUrl('');
+      return;
+    }
+    setBannerImageUrl('');
   };
 
   if (loading) {
@@ -166,13 +275,7 @@ export default function EditProfile() {
     <ScrollView style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => {
-          const hasChanges = displayName !== (auth.currentUser?.displayName || '') ||
-            username !== originalUsername ||
-            height !== '' ||
-            bodyType !== '' ||
-            selectedStyles.length > 0 ||
-            selectedColors.length > 0;
-          if (hasChanges) {
+          if (hasUnsavedChanges) {
             Alert.alert(
               'Unsaved Changes',
               'You have unsaved changes. Do you want to save them?',
@@ -199,6 +302,7 @@ export default function EditProfile() {
         <TouchableOpacity
           onPress={() => pickProfileMedia('photo')}
           style={[styles.photoPickerBtn, { borderColor: theme.border, backgroundColor: theme.bg2 }]}
+          disabled={isBusy}
         >
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={styles.photoPreview} resizeMode="cover" />
@@ -207,13 +311,23 @@ export default function EditProfile() {
               {(displayName?.charAt(0) || auth.currentUser?.displayName?.charAt(0) || 'U').toUpperCase()}
             </Text>
           )}
+          {uploadingPhoto ? <View style={styles.uploadOverlay}><ActivityIndicator color="#fff" /></View> : null}
         </TouchableOpacity>
+        {photoUrl ? (
+          <TouchableOpacity onPress={() => clearProfileMedia('photo')} disabled={isBusy}>
+            <Text style={[styles.removeMediaText, { color: theme.text2 }]}>Remove photo</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <Text style={[styles.label, { color: theme.text2 }]}>Profile Banner</Text>
       <TouchableOpacity
         onPress={() => pickProfileMedia('banner')}
-        style={[styles.mediaPickerBtn, { borderColor: theme.border, backgroundColor: theme.bg2 }]}
+        style={[
+          styles.mediaPickerBtn,
+          { borderColor: theme.border, backgroundColor: theme.bg2, height: bannerImageUrl ? 120 : 64 },
+        ]}
+        disabled={isBusy}
       >
         {bannerImageUrl ? (
           <Image source={{ uri: bannerImageUrl }} style={styles.bannerPreview} resizeMode="cover" />
@@ -225,7 +339,13 @@ export default function EditProfile() {
             style={styles.bannerPreview}
           />
         )}
+        {uploadingBanner ? <View style={styles.uploadOverlay}><ActivityIndicator color="#fff" /></View> : null}
       </TouchableOpacity>
+      {bannerImageUrl ? (
+        <TouchableOpacity onPress={() => clearProfileMedia('banner')} disabled={isBusy}>
+          <Text style={[styles.removeMediaText, { color: theme.text2 }]}>Remove banner</Text>
+        </TouchableOpacity>
+      ) : null}
 
       <Text style={[styles.label, { color: theme.text2 }]}>Display Name</Text>
       <TextInput
@@ -326,9 +446,9 @@ export default function EditProfile() {
       <TouchableOpacity
         style={[styles.saveButton, { backgroundColor: theme.tint }]}
         onPress={handleSave}
-        disabled={saving}
+        disabled={isBusy}
       >
-        {saving
+        {isBusy
           ? <ActivityIndicator color={theme.bg} />
           : <Text style={[styles.saveButtonText, { color: theme.bg }]}>Save Changes</Text>
         }
@@ -360,6 +480,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   bannerPreview: {
     width: '100%',
@@ -374,6 +495,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   photoPreview: {
     width: '100%',
@@ -386,6 +508,24 @@ const styles = StyleSheet.create({
   },
   photoCenterWrap: {
     alignItems: 'center',
+  },
+  removeMediaText: {
+    marginTop: -6,
+    marginBottom: 14,
+    fontSize: 12,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'solid',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(8,10,14,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoInitialText: {
     fontSize: 28,

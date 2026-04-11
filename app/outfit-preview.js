@@ -1,9 +1,11 @@
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OutfitPreview from '../src/components/OutfitPreview';
 
 export default function OutfitPreviewScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
 
   let outfit = null;
@@ -30,10 +32,10 @@ export default function OutfitPreviewScreen() {
       
       {/* 🔙 Back Button */}
       <TouchableOpacity
-        style={styles.backBtn}
+        style={[styles.backBtn, { top: insets.top + 8 }]}
         onPress={() => router.back()}
       >
-        <Text style={styles.backText}>Back</Text>
+        <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
 
       {/* 🔥 Fullscreen Outfit */}
@@ -54,12 +56,16 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    left: 16,
     zIndex: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 6,
   },
   backText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
+    color: '#fff',
   },
 });

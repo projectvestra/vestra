@@ -10,10 +10,12 @@ import {
 import { useRouter } from 'expo-router';
 import { registerWithEmail } from '../../services/authService';
 import { isUsernameTaken } from '../../services/usernameService';
-import { Colors } from '../../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { ui } from '../../theme/ui';
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
 
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -113,71 +115,75 @@ export default function SignupScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Create Account</Text>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <View style={[styles.authCard, { backgroundColor: theme.bg2, borderColor: theme.border }]}>
+        <Text style={[styles.eyebrow, { color: theme.text3 }]}>VESTRA</Text>
+        <Text style={[styles.heading, { color: theme.text }]}>Create Account</Text>
+        <Text style={[styles.subtitle, { color: theme.text2 }]}>Set up your profile and start personal styling.</Text>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TextInput
-        placeholder="Full Name"
-        placeholderTextColor="#999"
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-      />
+        <TextInput
+          placeholder="Full Name"
+          placeholderTextColor={theme.text3}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.bg3 }]}
+          value={name}
+          onChangeText={setName}
+        />
 
-      {usernameError ? <Text style={styles.usernameError}>{usernameError}</Text> : null}
-      {!usernameError && usernameAvailable ? (
-        <Text style={styles.usernameAvailable}>Username available.</Text>
-      ) : null}
-      <TextInput
-        placeholder="Username"
-        placeholderTextColor="#999"
-        style={styles.input}
-        autoCapitalize="none"
-        autoCorrect={false}
-        value={username}
-        onChangeText={handleUsernameChange}
-      />
-      {checkingUsername ? <Text style={styles.infoText}>Checking username...</Text> : null}
+        {usernameError ? <Text style={styles.usernameError}>{usernameError}</Text> : null}
+        {!usernameError && usernameAvailable ? (
+          <Text style={styles.usernameAvailable}>Username available.</Text>
+        ) : null}
+        <TextInput
+          placeholder="Username"
+          placeholderTextColor={theme.text3}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.bg3 }]}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={username}
+          onChangeText={handleUsernameChange}
+        />
+        {checkingUsername ? <Text style={[styles.infoText, { color: theme.text2 }]}>Checking username...</Text> : null}
 
-      <TextInput
-        placeholder="Email"
-        placeholderTextColor="#999"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-      />
+        <TextInput
+          placeholder="Email"
+          placeholderTextColor={theme.text3}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.bg3 }]}
+          value={email}
+          onChangeText={setEmail}
+        />
 
-      <TextInput
-        placeholder="Password"
-        placeholderTextColor="#999"
-        secureTextEntry
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-      />
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor={theme.text3}
+          secureTextEntry
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.bg3 }]}
+          value={password}
+          onChangeText={setPassword}
+        />
 
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={handleSignup}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.primaryButtonText}>Sign Up</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: theme.tint }]}
+          onPress={handleSignup}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={theme.bg} />
+          ) : (
+            <Text style={[styles.primaryButtonText, { color: theme.bg }]}>Sign Up</Text>
+          )}
+        </TouchableOpacity>
 
-      <Text
-        style={styles.footerText}
-        onPress={() => router.push('/auth/login')}
-      >
-        Already have an account? Login
-      </Text>
+        <Text
+          style={[styles.footerText, { color: theme.tint }]}
+          onPress={() => router.push('/auth/login')}
+        >
+          Already have an account? Login
+        </Text>
+      </View>
     </View>
   );
 }
@@ -186,26 +192,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-    backgroundColor: Colors.light.background,
+    padding: 20,
+  },
+  authCard: {
+    borderWidth: 1,
+    borderRadius: ui.radius.xl,
+    padding: 18,
+    ...ui.shadow.elevated,
+  },
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 8,
   },
   heading: {
-    fontSize: 26,
-    fontWeight: '600',
-    marginBottom: 32,
-    textAlign: 'center',
-    color: Colors.light.text,
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 6,
+    textAlign: 'left',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+    lineHeight: 20,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: ui.radius.md,
     paddingVertical: 14,
     paddingHorizontal: 12,
-    fontSize: 16,
+    fontSize: 15,
     marginBottom: 16,
-    color: Colors.light.text,
-    backgroundColor: '#fff',
   },
   infoText: {
     fontSize: 13,
@@ -227,23 +246,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   primaryButton: {
-    backgroundColor: Colors.light.tint,
     paddingVertical: 16,
-    borderRadius: 8,
+    borderRadius: ui.radius.md,
     marginTop: 8,
   },
   primaryButtonText: {
-    color: '#fff',
     textAlign: 'center',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   footerText: {
     marginTop: 20,
     textAlign: 'center',
-    color: Colors.light.tint,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   error: {
     color: 'red',

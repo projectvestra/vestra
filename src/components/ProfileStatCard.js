@@ -8,21 +8,20 @@ export default function ProfileStatCard({ value, label }) {
   return (
     <View style={[styles.card, { backgroundColor: theme.bg2, borderColor: theme.border }]}> 
       <Text style={[styles.value, { color: theme.text }]}>{value}</Text>
-      <Text style={[styles.label, { color: theme.text2 }]}>{label}</Text>
+      <Text style={[styles.label, { color: theme.text2 }]} numberOfLines={1}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
+    width: 118,
     borderRadius: ui.radius.md,
-    paddingVertical: ui.spacing.md,
-    paddingHorizontal: ui.spacing.sm,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     alignItems: 'center',
-    margin: 4,
     borderWidth: 1,
-    minHeight: 78,
+    minHeight: 72,
   },
   value: {
     fontSize: 18,
@@ -30,9 +29,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     marginTop: 5,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
 });

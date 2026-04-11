@@ -1,11 +1,14 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { useTheme } from '../../context/ThemeContext';
+import { ui } from '../../theme/ui';
 
 export default function StylePreferencesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { updatePreferences } = useOnboarding();
   const { theme } = useTheme();
 
@@ -31,8 +34,13 @@ export default function StylePreferencesScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.content}>
+        <View style={[styles.contentCard, { backgroundColor: theme.bg2, borderColor: theme.border }]}> 
         <Text style={[styles.progress, { color: theme.text3 }]}>Step 2 of 4</Text>
 
         <Text style={[styles.title, { color: theme.text }]}>Choose your style</Text>
@@ -69,6 +77,7 @@ export default function StylePreferencesScreen() {
         >
           <Text style={[styles.buttonText, { color: theme.bg }]}>Continue</Text>
         </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -76,22 +85,28 @@ export default function StylePreferencesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 24, justifyContent: 'center', minHeight: '100%' },
-  progress: { fontSize: 14, textAlign: 'center', marginBottom: 12 },
-  title: { fontSize: 26, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 15, textAlign: 'center', marginBottom: 32 },
-  sectionTitle: { fontSize: 18, fontWeight: '500', marginBottom: 16 },
+  content: { padding: 20, justifyContent: 'center', minHeight: '100%' },
+  contentCard: {
+    borderWidth: 1,
+    borderRadius: ui.radius.xl,
+    padding: 18,
+    ...ui.shadow.elevated,
+  },
+  progress: { fontSize: 12, textAlign: 'center', marginBottom: 12, letterSpacing: 0.8, textTransform: 'uppercase', fontWeight: '700' },
+  title: { fontSize: 28, fontWeight: '800', textAlign: 'center', marginBottom: 8, letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, textAlign: 'center', marginBottom: 28, lineHeight: 20 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
   stylesContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 32 },
   styleOption: {
     borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 12,
-    marginBottom: 12,
+    borderRadius: ui.radius.pill,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginRight: 8,
+    marginBottom: 8,
   },
   selected: { borderColor: '#007AFF', borderWidth: 2 },
-  styleText: { fontSize: 16 },
-  button: { paddingVertical: 16, borderRadius: 12, marginTop: 12 },
-  buttonText: { textAlign: 'center', fontSize: 16, fontWeight: '500' }
+  styleText: { fontSize: 13, fontWeight: '600' },
+  button: { paddingVertical: 16, borderRadius: ui.radius.md, marginTop: 4 },
+  buttonText: { textAlign: 'center', fontSize: 15, fontWeight: '700' }
 });

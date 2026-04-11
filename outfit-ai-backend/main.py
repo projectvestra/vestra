@@ -1,7 +1,7 @@
 import os, json, uuid
 from urllib.parse import quote
 from urllib.request import urlopen
-from fastapi import FastAPI, Form, Query
+from fastapi import FastAPI, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import re
@@ -369,6 +369,51 @@ Only the JSON object."""}]
     except Exception as e:
         fallback = _fallback_weekly_plan(wardrobe, occasions)
         return {"plan": fallback, "source": "local-fallback", "error": str(e)}
+
+
+@app.post("/profile-summary")
+async def profile_summary(request: Request):
+    payload = await request.json()
+    styles = payload.get("styles") or []
+    colors = payload.get("colors") or []
+    body_type = payload.get("bodyType") or ""
+
+    if not isinstance(styles, list):
+        styles = [styles]
+    if not isinstance(colors, list):
+        colors = [colors]
+
+    style_text = ", ".join([str(style) for style in styles[:3] if str(style).strip()]) or "clean style"
+    color_text = ", ".join([str(color) for color in colors[:3] if str(color).strip()]) or "neutral colors"
+    fit_text = str(body_type).strip() or "balanced fit"
+
+    try:
+        from anthropic import Anthropic
+
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY missing")
+
+        client = Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=80,
+            system="You write very short fashion profile summaries. Return one concise summary of 1-2 short sentences, no bullets, no labels, no extra commentary.",
+            messages=[{"role": "user", "content": f"""
+Style tags: {style_text}
+Body type: {fit_text}
+Color choices: {color_text}
+
+Write a short profile summary in 1-2 sentences, max 24 words total.
+"""}]
+        )
+
+        summary = response.content[0].text.strip()
+        summary = re.sub(r"\s+", " ", summary)
+        return {"summary": summary, "source": "ai", "model": "claude-sonnet-4-6"}
+    except Exception as e:
+        summary = f"Style: {style_text}. Fit: {fit_text}. Colors: {color_text}."
+        return {"summary": summary, "source": "local-fallback", "error": str(e)}
 
 def _cat(item):
     cat = (item.get('category') or item.get('name') or '').lower()

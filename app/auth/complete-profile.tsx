@@ -6,14 +6,16 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { auth, db } from '../../src/services/firebaseConfig';
+import { useTheme } from '../../src/context/ThemeContext';
 import { claimUsername, isUsernameTaken } from '../../src/services/usernameService';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { linkEmailPasswordToCurrentUser } from '../../src/services/authService';
-import { Colors } from '../../constants/theme';
 
 function defaultDisplayNameFromEmail(email: string) {
   if (!email) return '';
@@ -27,17 +29,21 @@ function defaultDisplayNameFromEmail(email: string) {
 
 export default function CompleteProfile() {
   const router = useRouter();
+  const theme = useTheme();
   const user = auth.currentUser;
 
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const [error, setError] = useState('');
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [loading, setLoading] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
+  const [step, setStep] = useState(1); // 1: display name, 2: username, 3: password
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSeqRef = useRef(0);
 
@@ -64,7 +70,7 @@ export default function CompleteProfile() {
       if (profileSnap.exists()) {
         const profile = profileSnap.data() || {};
         if (profile.username) {
-          router.replace('/tabs/home');
+          router.replace('/(tabs)/home');
           return;
         }
 
@@ -88,6 +94,24 @@ export default function CompleteProfile() {
       }
     };
   }, []);
+
+  const handleDisplayNameNext = async () => {
+    if (!displayName.trim()) {
+      setError('Please enter your display name');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      await updateProfile(auth.currentUser!, { displayName: displayName.trim() });
+      setStep(2);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUsernameChange = async (value: string) => {
     const clean = value.toLowerCase().trim();
@@ -133,14 +157,7 @@ export default function CompleteProfile() {
     }, 450);
   };
 
-  const handleContinue = async () => {
-    setError('');
-
-    if (!user) {
-      setError('You need to login first.');
-      return;
-    }
-
+  const handleUsernameNext = async () => {
     if (!username) {
       setError('Username is required.');
       return;
@@ -156,19 +173,41 @@ export default function CompleteProfile() {
       return;
     }
 
-    if (mustAskDisplayName && !displayName.trim()) {
-      setError('Display name is required.');
+    setError('');
+    setStep(3);
+  };
+
+  const handlePasswordNext = async () => {
+    setPasswordError('');
+
+    if (!user) {
+      setError('You need to login first.');
       return;
+    }
+
+    // Password validation if provided
+    if (password) {
+      if (password.length < 6) {
+        setPasswordError('Password must be at least 6 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setPasswordError('Passwords do not match.');
+        return;
+      }
     }
 
     setLoading(true);
     try {
+      setError('');
       const finalDisplayName = mustAskDisplayName
         ? displayName.trim()
         : user.displayName || defaultDisplayNameFromEmail(user.email || '');
 
+      // Claim username
       await claimUsername(user.uid, username, null);
 
+      // Update Firestore profile
       await setDoc(
         doc(db, 'user_profiles', user.uid),
         {
@@ -181,14 +220,11 @@ export default function CompleteProfile() {
         { merge: true }
       );
 
-      if (finalDisplayName) {
-        await updateProfile(user, { displayName: finalDisplayName });
-      }
-
-      if (isGoogleUser && password.trim()) {
+      // Link email/password if provided
+      if (password.trim()) {
         const linkResult = await linkEmailPasswordToCurrentUser(password.trim());
         if (!linkResult.success) {
-          setError(linkResult.message);
+          setPasswordError(linkResult.message);
           setLoading(false);
           return;
         }
@@ -196,169 +232,321 @@ export default function CompleteProfile() {
 
       router.replace('/onboarding/step1');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to save profile.');
+      setPasswordError(e instanceof Error ? e.message : 'Failed to complete profile.');
     } finally {
       setLoading(false);
     }
   };
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safeArea: {
+          flex: 1,
+          backgroundColor: theme.bg,
+        },
+        container: {
+          flex: 1,
+          backgroundColor: theme.bg,
+        },
+        loaderWrap: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: theme.bg,
+        },
+        scrollContent: {
+          minHeight: '100%',
+          justifyContent: 'center',
+          paddingVertical: 32,
+        },
+        contentCard: {
+          marginHorizontal: 16,
+          padding: 24,
+          backgroundColor: theme.bg2,
+          borderRadius: 12,
+          shadowColor: theme.shadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 3,
+        },
+        heading: {
+          fontSize: 26,
+          fontWeight: '700',
+          marginBottom: 8,
+          color: theme.text,
+        },
+        subtitle: {
+          fontSize: 14,
+          marginBottom: 20,
+          color: theme.textSecondary,
+          lineHeight: 20,
+        },
+        label: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: theme.text,
+          marginBottom: 8,
+        },
+        optionalLabel: {
+          fontSize: 12,
+          color: theme.textSecondary,
+          fontWeight: '500',
+          marginLeft: 4,
+        },
+        inputContainer: {
+          marginBottom: 16,
+        },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 8,
+          paddingVertical: 12,
+          paddingHorizontal: 12,
+          fontSize: 16,
+          color: theme.text,
+          backgroundColor: theme.bg,
+        },
+        button: {
+          backgroundColor: theme.tint,
+          paddingVertical: 14,
+          borderRadius: 8,
+          marginTop: 24,
+          alignItems: 'center',
+        },
+        buttonDisabled: {
+          opacity: 0.6,
+        },
+        buttonText: {
+          color: '#fff',
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        error: {
+          color: '#ff4444',
+          marginBottom: 12,
+          fontSize: 13,
+          fontWeight: '500',
+        },
+        usernameError: {
+          color: '#ff4444',
+          marginBottom: 6,
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        usernameAvailable: {
+          color: '#00cc00',
+          marginBottom: 6,
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        helper: {
+          fontSize: 12,
+          color: theme.textSecondary,
+          marginBottom: 12,
+          lineHeight: 16,
+        },
+        staticRow: {
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 8,
+          padding: 12,
+          backgroundColor: theme.bg,
+          marginBottom: 16,
+        },
+        staticLabel: {
+          fontSize: 12,
+          color: theme.textSecondary,
+          marginBottom: 4,
+        },
+        staticValue: {
+          fontSize: 16,
+          fontWeight: '600',
+          color: theme.text,
+        },
+        stepCounter: {
+          fontSize: 12,
+          color: theme.textSecondary,
+          marginBottom: 16,
+          fontWeight: '500',
+        },
+      }),
+    [theme]
+  );
+
   if (bootLoading) {
     return (
-      <View style={styles.loaderWrap}>
-        <ActivityIndicator size="large" color={Colors.light.tint} />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color={theme.tint} />
+        </View>
+      </SafeAreaView>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Complete Profile</Text>
-      <Text style={styles.subtitle}>Username is required before you continue.</Text>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {usernameError ? <Text style={styles.usernameError}>{usernameError}</Text> : null}
-      {!usernameError && usernameAvailable ? (
-        <Text style={styles.usernameAvailable}>Username available.</Text>
-      ) : null}
-      <TextInput
-        placeholder="Username"
-        placeholderTextColor="#999"
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={styles.input}
-        value={username}
-        onChangeText={handleUsernameChange}
-      />
-      {checkingUsername ? <Text style={styles.helper}>Checking username...</Text> : null}
-
-      {mustAskDisplayName ? (
-        <TextInput
-          placeholder="Display name"
-          placeholderTextColor="#999"
-          style={styles.input}
-          value={displayName}
-          onChangeText={setDisplayName}
-        />
-      ) : (
-        <View style={styles.staticRow}>
-          <Text style={styles.staticLabel}>Display name</Text>
-          <Text style={styles.staticValue}>
-            {user?.displayName || defaultDisplayNameFromEmail(user?.email || '')}
+  const renderStep = () => {
+    if (step === 1 && mustAskDisplayName) {
+      return (
+        <View>
+          <Text style={styles.heading}>Welcome!</Text>
+          <Text style={styles.subtitle}>
+            We got your email from Google. Now let's set up your display name.
           </Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Display Name</Text>
+            <TextInput
+              placeholder="Enter your display name"
+              placeholderTextColor={theme.textSecondary}
+              value={displayName}
+              onChangeText={setDisplayName}
+              editable={!loading}
+              style={styles.input}
+            />
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleDisplayNameNext}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Next</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      )}
+      );
+    } else if ((step === 1 && !mustAskDisplayName) || step === 2) {
+      return (
+        <View>
+          <Text style={styles.heading}>Choose Username</Text>
+          <Text style={styles.subtitle}>
+            This is how other users will find and follow you.
+          </Text>
 
-      {isGoogleUser ? (
-        <>
-          <TextInput
-            placeholder="Create a password to sign in with email"
-            placeholderTextColor="#999"
-            secureTextEntry
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-          />
-          <Text style={styles.helper}>Optional: add a password so you can log in with email later.</Text>
-        </>
-      ) : null}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Username</Text>
+            <TextInput
+              placeholder="Enter username"
+              placeholderTextColor={theme.textSecondary}
+              value={username}
+              onChangeText={handleUsernameChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading && !checkingUsername}
+              style={styles.input}
+            />
+            {checkingUsername && (
+              <Text style={styles.stepCounter}>Checking availability...</Text>
+            )}
+            {username.length >= 3 && !usernameError && !checkingUsername && (
+              <Text style={styles.usernameAvailable}>✓ Username available</Text>
+            )}
+            {usernameError ? <Text style={styles.usernameError}>{usernameError}</Text> : null}
+          </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleContinue} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Continue</Text>}
-      </TouchableOpacity>
-    </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {!mustAskDisplayName && (
+            <View style={styles.staticRow}>
+              <Text style={styles.staticLabel}>Display name</Text>
+              <Text style={styles.staticValue}>
+                {user?.displayName || defaultDisplayNameFromEmail(user?.email || '')}
+              </Text>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.button, (loading || checkingUsername) && styles.buttonDisabled]}
+            onPress={handleUsernameNext}
+            disabled={loading || checkingUsername || !usernameAvailable}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Next</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      );
+    } else if (step === 3) {
+      return (
+        <View>
+          <Text style={styles.heading}>Add Password</Text>
+          <Text style={styles.subtitle}>
+            Optional: Set a password so you can also log in with email.
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.label}>Password</Text>
+              <Text style={styles.optionalLabel}>(optional)</Text>
+            </View>
+            <TextInput
+              placeholder="Enter password (optional)"
+              placeholderTextColor={theme.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!loading}
+              style={styles.input}
+            />
+          </View>
+
+          {password ? (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <TextInput
+                placeholder="Confirm password"
+                placeholderTextColor={theme.textSecondary}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                editable={!loading}
+                style={styles.input}
+              />
+            </View>
+          ) : null}
+
+          <Text style={styles.helper}>
+            You can always add a password later in your settings.
+          </Text>
+
+          {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handlePasswordNext}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Complete Profile</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      );
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.contentCard}>{renderStep()}</View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  loaderWrap: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.light.background,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: Colors.light.background,
-  },
-  heading: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-    color: Colors.light.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#555',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    marginBottom: 12,
-    color: Colors.light.text,
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: Colors.light.tint,
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  error: {
-    color: '#ef4444',
-    marginBottom: 12,
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  usernameError: {
-    color: '#ef4444',
-    marginBottom: 6,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  usernameAvailable: {
-    color: '#10b981',
-    marginBottom: 6,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  helper: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  staticRow: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#fff',
-    marginBottom: 8,
-  },
-  staticLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  staticValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-});
+// Placeholder for deprecated styles - using theme-aware styles in component
