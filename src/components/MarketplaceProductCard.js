@@ -1,8 +1,9 @@
+import { memo } from 'react';
 import { View, Text, StyleSheet, Image, Pressable, Linking, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { ui } from '../theme/ui';
 
-export default function MarketplaceProductCard({ product, isSaved, onToggleSave }) {
+function MarketplaceProductCard({ product, isSaved, onToggleSave }) {
   const { theme } = useTheme();
 
   const handleBuyNow = async () => {
@@ -72,7 +73,11 @@ export default function MarketplaceProductCard({ product, isSaved, onToggleSave 
             onPress={handleBuyNow}
             style={({ pressed }) => [
               styles.button,
-              { backgroundColor: theme.tint, opacity: pressed ? 0.88 : 1 },
+              {
+                backgroundColor: theme.tint,
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? ui.motion.pressScale : 1 }],
+              },
             ]}
           >
             <Text style={[styles.buttonText, { color: theme.bg }]}>Buy Now</Text>
@@ -82,7 +87,11 @@ export default function MarketplaceProductCard({ product, isSaved, onToggleSave 
             onPress={onToggleSave}
             style={({ pressed }) => [
               styles.saveButton,
-              { borderColor: theme.border, backgroundColor: pressed ? theme.bg : 'transparent' },
+              {
+                borderColor: theme.border,
+                backgroundColor: pressed ? theme.bg : 'transparent',
+                transform: [{ scale: pressed ? ui.motion.pressScale : 1 }],
+              },
             ]}
           >
             <Text style={[styles.saveButtonText, { color: isSaved ? '#ef4444' : theme.text }]}>
@@ -101,7 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: ui.radius.lg,
     margin: 6,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 0.75,
     ...ui.shadow.card,
   },
   image: {
@@ -156,7 +165,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 10,
-    paddingVertical: 10,
+    paddingVertical: 11,
     borderRadius: ui.radius.md,
     alignItems: 'center',
   },
@@ -166,9 +175,9 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 8,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderRadius: ui.radius.md,
-    borderWidth: 1,
+    borderWidth: 0.75,
     alignItems: 'center',
   },
   saveButtonText: {
@@ -179,7 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: ui.radius.pill,
-    borderWidth: 1,
+    borderWidth: 0.75,
   },
   categoryText: {
     fontSize: 10,
@@ -188,3 +197,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
+
+export default memo(MarketplaceProductCard);

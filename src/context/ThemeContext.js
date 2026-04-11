@@ -3,29 +3,29 @@ import { auth, db } from '../services/firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 export const lightTheme = {
-  bg: '#f7f7f4',
-  bg2: '#ffffff',
-  bg3: '#efefea',
-  text: '#121214',
-  text2: '#55585f',
-  text3: '#8b8f97',
-  icon: '#5f6670',
-  border: '#e8e8e2',
+  bg: '#f6f6f3',
+  bg2: '#fbfbf8',
+  bg3: '#efefe9',
+  text: '#17181b',
+  text2: '#5f636c',
+  text3: '#8e939c',
+  icon: '#676d78',
+  border: '#e6e6df',
   tint: '#2563eb',
-  card: '#ffffff',
+  card: '#f9f9f6',
 };
 
 export const darkTheme = {
   bg: '#0b0c0f',
-  bg2: '#14161b',
-  bg3: '#1c1f26',
-  text: '#f5f7fb',
-  text2: '#a5adba',
-  text3: '#7a8392',
-  icon: '#a7b0bc',
-  border: '#242935',
+  bg2: '#13161c',
+  bg3: '#1a1e27',
+  text: '#e9edf5',
+  text2: '#a1a9b6',
+  text3: '#778091',
+  icon: '#9fa8b8',
+  border: '#232937',
   tint: '#60a5fa',
-  card: '#13151a',
+  card: '#12151c',
 };
 
 const ThemeContext = createContext({

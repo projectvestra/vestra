@@ -3,11 +3,11 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -88,14 +88,34 @@ export default function Marketplace() {
     setSavedProductIds(result.items.map((item) => item.id));
   };
 
+  const renderProduct = useCallback(({ item }: { item: MarketplaceProduct }) => (
+    <MarketplaceProductCard
+      product={item}
+      isSaved={savedProductIds.includes(item.id)}
+      onToggleSave={() => handleToggleSave(item)}
+    />
+  ), [savedProductIds]);
+
+  const keyExtractor = useCallback((item: MarketplaceProduct) => item.id, []);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top }] }>
       <View style={styles.headerRow}>
         <Text style={[styles.title, { color: theme.text }]}>Marketplace</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={[styles.wishlistBtn, { backgroundColor: theme.bg2 }]} onPress={() => router.push('/marketplace-wishlist' as any)}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.wishlistBtn,
+              {
+                backgroundColor: theme.bg2,
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? ui.motion.pressScale : 1 }],
+              },
+            ]}
+            onPress={() => router.push('/marketplace-wishlist' as any)}
+          >
             <Text style={[styles.wishlistBtnText, { color: theme.text }]}>Wishlist</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
       <Text style={[styles.wishlistSummary, { color: theme.text2 }]}>
@@ -105,28 +125,32 @@ export default function Marketplace() {
       {/* Category Filters */}
       <View style={styles.categoryRow}>
         {categories.map((cat) => (
-          <TouchableOpacity
+          <Pressable
             key={cat}
-            style={[
-              styles.categoryChip,
-              { backgroundColor: selectedCategory === cat ? theme.tint : theme.bg2 },
-            ]}
             onPress={() => setSelectedCategory(cat)}
+            style={({ pressed }) => [
+              styles.categoryChip,
+              {
+                backgroundColor: selectedCategory === cat ? theme.tint : theme.bg2,
+                borderColor: selectedCategory === cat ? 'transparent' : theme.border,
+                opacity: pressed ? 0.9 : 1,
+              },
+            ]}
           >
             <Text
               style={[
                 styles.categoryText,
-                { color: selectedCategory === cat ? '#fff' : theme.text },
+                { color: selectedCategory === cat ? theme.bg : theme.text },
               ]}
             >
               {cat}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
 
       {/* Sort Toggle */}
-      <TouchableOpacity
+      <Pressable
         style={styles.sortButton}
         onPress={() =>
           setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
@@ -135,7 +159,7 @@ export default function Marketplace() {
         <Text style={[styles.sortText, { color: theme.text2 }] }>
           Sort: Price {sortOrder === 'asc' ? 'Low → High' : 'High → Low'}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
 
       {loading ? (
         <View style={styles.loaderWrap}>
@@ -144,15 +168,13 @@ export default function Marketplace() {
       ) : (
         <FlatList
           data={filteredProducts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <MarketplaceProductCard
-              product={item}
-              isSaved={savedProductIds.includes(item.id)}
-              onToggleSave={() => handleToggleSave(item)}
-            />
-          )}
+          keyExtractor={keyExtractor}
+          renderItem={renderProduct}
           numColumns={2}
+          removeClippedSubviews
+          initialNumToRender={6}
+          maxToRenderPerBatch={8}
+          windowSize={7}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}

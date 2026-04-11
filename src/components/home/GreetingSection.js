@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     marginTop: ui.spacing.lg,
     padding: ui.spacing.md,
     borderRadius: ui.radius.lg,
-    borderWidth: 1,
+    borderWidth: 0.75,
     ...ui.shadow.card,
   },
   eyebrow: {
@@ -70,15 +70,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   greeting: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   summaryBox: {
     marginTop: ui.spacing.sm,
-    padding: ui.spacing.md,
+    padding: ui.spacing.sm,
     borderRadius: ui.radius.md,
-    borderWidth: 1,
+    borderWidth: 0.75,
   },
   summaryText: {
     fontSize: 14,

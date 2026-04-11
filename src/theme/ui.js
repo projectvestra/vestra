@@ -24,25 +24,30 @@ export const ui = {
     caption: 12,
     eyebrow: 11,
   },
+  motion: {
+    pressScale: 0.985,
+    quick: 140,
+    normal: 220,
+  },
   shadow: {
     card: Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.035,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
       },
-      android: { elevation: 2 },
+      android: { elevation: 1 },
       default: {},
     }),
     elevated: Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.055,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 6 },
       },
-      android: { elevation: 4 },
+      android: { elevation: 2 },
       default: {},
     }),
   },

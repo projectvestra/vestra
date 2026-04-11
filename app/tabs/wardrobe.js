@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   FlatList,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -70,6 +70,11 @@ export default function Wardrobe() {
         return matchers.some(term => cat.includes(term));
       });
 
+  const keyExtractor = useCallback((item) => item.id, []);
+  const renderItem = useCallback(({ item }) => (
+    <WardrobeItemCard item={item} onDelete={loadData} onEdit={loadData} />
+  ), [loadData]);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top}]}>
       {bannerText ? (
@@ -82,22 +87,23 @@ export default function Wardrobe() {
       <Text style={[styles.subtitle, { color: theme.text2 }]}>{allItems.length} items</Text>
 
       {/* Generate Outfit Button */}
-      <TouchableOpacity
-        style={[styles.generateBtn, { backgroundColor: theme.tint }]}
+      <Pressable
+        style={({ pressed }) => [styles.generateBtn, { backgroundColor: theme.tint, opacity: pressed ? 0.92 : 1 }]}
         onPress={() => setShowAssistant(true)}
       >
         <Text style={[styles.generateBtnText, { color: theme.bg }]}>✦ Generate Outfit</Text>
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Category Filter */}
       <View style={styles.categories}>
         {CATEGORIES.map((category) => (
-          <TouchableOpacity
+          <Pressable
             key={category}
             onPress={() => setSelectedCategory(category)}
-            style={[
+            style={({ pressed }) => [
               styles.category,
               selectedCategory === category && [styles.activeCategory, { borderBottomColor: theme.tint }],
+              pressed && { opacity: 0.82 },
             ]}
           >
             <Text style={[
@@ -107,7 +113,7 @@ export default function Wardrobe() {
             ]}>
               {category}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
 
@@ -130,12 +136,14 @@ export default function Wardrobe() {
       ) : (
         <FlatList
           data={filteredItems}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           numColumns={2}
+          removeClippedSubviews
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={8}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <WardrobeItemCard item={item} onDelete={loadData} onEdit={loadData} />
-          )}
+          renderItem={renderItem}
         />
       )}
 

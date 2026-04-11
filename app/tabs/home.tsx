@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ScrollView, StyleSheet, View, Text,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -118,18 +118,19 @@ export default function Home() {
       <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
       <View style={styles.actionGrid}>
         {quickActions.map((action, i) => (
-          <TouchableOpacity
+          <Pressable
             key={i}
-            style={[
+            onPress={action.onPress}
+            style={({ pressed }) => [
               styles.actionCard,
               {
                 backgroundColor: action.highlight ? theme.tint : theme.bg2,
                 borderColor: theme.border,
                 shadowColor: action.highlight ? theme.tint : '#000',
+                opacity: pressed ? 0.92 : 1,
+                transform: [{ scale: pressed ? ui.motion.pressScale : 1 }],
               },
             ]}
-            onPress={action.onPress}
-            activeOpacity={0.84}
           >
             <Text style={styles.actionIcon}>{action.icon}</Text>
             <Text style={[
@@ -144,7 +145,7 @@ export default function Home() {
             ]}>
               {action.subtitle}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
 
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '47%', borderRadius: ui.radius.lg, padding: 16,
-    borderWidth: 1, borderColor: 'transparent',
+    borderWidth: 1,
     ...ui.shadow.card,
   },
   actionIcon: { fontSize: 24, marginBottom: 8 },
