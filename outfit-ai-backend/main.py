@@ -169,6 +169,61 @@ def extract_json(text):
             pass
     return None
 
+
+def _fallback_score(top: dict, bottom: dict, shoes: dict, occasion: str = "casual") -> dict:
+    base = 7.0
+    if occasion in {"office", "smart-casual"}:
+        base += 0.4
+    if occasion in {"party", "date night"}:
+        base += 0.3
+    return {
+        "total": round(min(9.3, base), 2),
+        "color": round(min(9.2, base + 0.2), 2),
+        "coherence": round(min(9.1, base + 0.1), 2),
+        "occasion": round(min(9.0, base + 0.15), 2),
+    }
+
+
+def _fallback_recommendations(wardrobe: list[dict], occasion: str, limit: int = 10) -> list[dict]:
+    tops = [i for i in wardrobe if _cat(i) == 'top']
+    bottoms = [i for i in wardrobe if _cat(i) == 'bottom']
+    shoes = [i for i in wardrobe if _cat(i) == 'shoes']
+
+    outfits: list[dict] = []
+    for top in tops:
+        for bottom in bottoms:
+            for shoe in shoes:
+                outfits.append({
+                    "top": top,
+                    "bottom": bottom,
+                    "shoes": shoe,
+                    "score": _fallback_score(top, bottom, shoe, occasion),
+                })
+                if len(outfits) >= limit:
+                    return outfits
+    return outfits
+
+
+def _fallback_weekly_plan(wardrobe: list[dict], occasions: dict) -> dict:
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    outfits = _fallback_recommendations(wardrobe, "casual", limit=40)
+    if not outfits:
+        return {}
+
+    plan = {}
+    for idx, day in enumerate(days):
+        if day not in occasions:
+            continue
+        outfit = outfits[idx % len(outfits)]
+        occ = occasions.get(day, "casual")
+        plan[day] = {
+            "top": outfit["top"],
+            "bottom": outfit["bottom"],
+            "shoes": outfit["shoes"],
+            "score": _fallback_score(outfit["top"], outfit["bottom"], outfit["shoes"], occ),
+        }
+    return plan
+
 @app.post("/recommend")
 async def recommend(
     occasion: str = Form("casual"),
@@ -178,8 +233,6 @@ async def recommend(
     locked_bottom_id: str = Form(None),
     locked_shoes_id: str = Form(None),
 ):
-    from anthropic import Anthropic
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     wardrobe = json.loads(wardrobe_json)
     items_by_id = {item['id']: item for item in wardrobe}
 
@@ -196,11 +249,20 @@ async def recommend(
         for i in wardrobe[:40]
     ])
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1500,
-        system="You are a professional fashion stylist. Generate outfit recommendations using ONLY items from the wardrobe. Return valid JSON only.",
-        messages=[{"role": "user", "content": f"""
+    try:
+        from anthropic import Anthropic
+
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY missing")
+
+        client = Anthropic(api_key=api_key)
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            system="You are a professional fashion stylist. Generate outfit recommendations using ONLY items from the wardrobe. Return valid JSON only.",
+            messages=[{"role": "user", "content": f"""
 WARDROBE:
 {wardrobe_text}
 
@@ -210,13 +272,12 @@ Generate 10 outfit combinations ranked by style score.
 Return JSON array:
 [{{"top": {{"id":"..."}}, "bottom": {{"id":"..."}}, "shoes": {{"id":"..."}}, "score": {{"total": 8.5, "color": 8.0, "coherence": 9.0, "occasion": 8.5}}}}]
 Only the JSON array, nothing else."""}]
-    )
+        )
 
-    try:
         raw = response.content[0].text.strip()
         outfits_raw = extract_json(raw)
-        if not outfits_raw:
-            return {"outfits": [], "error": "Invalid JSON response"}
+        if not outfits_raw or not isinstance(outfits_raw, list):
+            raise RuntimeError("Invalid AI JSON response")
         # Hydrate IDs back to full items
         outfits = []
         for o in outfits_raw:
@@ -230,17 +291,18 @@ Only the JSON array, nothing else."""}]
                     "shoes":  items_by_id[shoes_id],
                     "score":  o.get('score', {"total":7,"color":7,"coherence":7,"occasion":7}),
                 })
-        return {"outfits": outfits, "source": "ai"}
+        if outfits:
+            return {"outfits": outfits, "source": "ai"}
+        raise RuntimeError("AI returned no valid outfits")
     except Exception as e:
-        return {"outfits": [], "error": str(e)}
+        fallback = _fallback_recommendations(wardrobe, occasion, limit=10)
+        return {"outfits": fallback, "source": "local-fallback", "error": str(e)}
 
 @app.post("/weekly-plan")
 async def weekly_plan(
     wardrobe_json: str = Form(...),
     occasions_json: str = Form(...),
 ):
-    from anthropic import Anthropic
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     wardrobe = json.loads(wardrobe_json)
     occasions = json.loads(occasions_json)
     items_by_id = {item['id']: item for item in wardrobe}
@@ -251,11 +313,20 @@ async def weekly_plan(
     ])
     occasions_text = "\n".join([f"{day}: {occ}" for day, occ in occasions.items()])
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        system="You are a professional fashion stylist. Create a 7-day outfit plan with NO REPEATED combinations. Each day must have a DIFFERENT outfit. Match formality to occasion. Return valid JSON only.",
-        messages=[{"role": "user", "content": f"""
+    try:
+        from anthropic import Anthropic
+
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY missing")
+
+        client = Anthropic(api_key=api_key)
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            system="You are a professional fashion stylist. Create a 7-day outfit plan with NO REPEATED combinations. Each day must have a DIFFERENT outfit. Match formality to occasion. Return valid JSON only.",
+            messages=[{"role": "user", "content": f"""
 WARDROBE ITEMS:
 {wardrobe_text}
 
@@ -274,13 +345,12 @@ Return JSON:
   "Sunday":    {{"top_id": "...", "bottom_id": "...", "shoes_id": "...", "score": {{"total": 7.2, "color": 7.0, "coherence": 7.5, "occasion": 7.0}}}}
 }}
 Only the JSON object."""}]
-    )
+        )
 
-    try:
         raw = response.content[0].text.strip()
         plan_data = extract_json(raw)
-        if not plan_data:
-            return {"plan": {}, "error": "Invalid JSON response"}
+        if not plan_data or not isinstance(plan_data, dict):
+            raise RuntimeError("Invalid AI JSON response")
         result = {}
         for day, combo in plan_data.items():
             top_id    = combo.get('top_id')
@@ -293,9 +363,12 @@ Only the JSON object."""}]
                     "shoes":  items_by_id[shoes_id],
                     "score":  combo.get('score', {"total":7,"color":7,"coherence":7,"occasion":7}),
                 }
-        return {"plan": result, "source": "ai", "model": "claude-sonnet-4-6"}
+        if result:
+            return {"plan": result, "source": "ai", "model": "claude-sonnet-4-6"}
+        raise RuntimeError("AI returned no valid weekly plan")
     except Exception as e:
-        return {"plan": {}, "error": str(e)}
+        fallback = _fallback_weekly_plan(wardrobe, occasions)
+        return {"plan": fallback, "source": "local-fallback", "error": str(e)}
 
 def _cat(item):
     cat = (item.get('category') or item.get('name') or '').lower()

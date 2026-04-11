@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ScrollView, StyleSheet, View, Text,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GreetingSection from '../../src/components/home/GreetingSection';
 import TodayOutfitCard from '../../src/components/home/TodayOutfitCard';
@@ -16,6 +17,7 @@ import {
 } from '../../src/services/homeService';
 import { getUserWardrobeItems } from '../../src/services/cloudWardrobeService';
 import { useTheme } from '../../src/context/ThemeContext';
+import { ui } from '../../src/theme/ui';
 
 type WardrobeItem = {
   id: string;
@@ -43,11 +45,7 @@ export default function Home() {
   const [showAssistant, setShowAssistant] = useState(false);
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [summaryData, outfitData, weeklyPreview, wardrobeData] = await Promise.all([
         getHomeSummary(),
@@ -63,7 +61,18 @@ export default function Home() {
     } catch (error) {
       console.log('Home load error:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+      return undefined;
+    }, [loadData])
+  );
 
   const quickActions = [
     {
@@ -109,29 +118,34 @@ export default function Home() {
       <Text style={[styles.sectionTitle, { color: theme.text }]}>Quick Actions</Text>
       <View style={styles.actionGrid}>
         {quickActions.map((action, i) => (
-          <TouchableOpacity
+          <Pressable
             key={i}
-            style={[
-              styles.actionCard,
-              { backgroundColor: action.highlight ? '#000' : theme.card },
-            ]}
             onPress={action.onPress}
-            activeOpacity={0.8}
+            style={({ pressed }) => [
+              styles.actionCard,
+              {
+                backgroundColor: action.highlight ? theme.tint : theme.bg2,
+                borderColor: theme.border,
+                shadowColor: action.highlight ? theme.tint : '#000',
+                opacity: pressed ? 0.92 : 1,
+                transform: [{ scale: pressed ? ui.motion.pressScale : 1 }],
+              },
+            ]}
           >
             <Text style={styles.actionIcon}>{action.icon}</Text>
             <Text style={[
               styles.actionLabel,
-              { color: action.highlight ? '#fff' : theme.text },
+              { color: action.highlight ? theme.bg : theme.text },
             ]}>
               {action.label}
             </Text>
             <Text style={[
               styles.actionSub,
-              { color: action.highlight ? '#aaa' : theme.text2 },
+              { color: action.highlight ? 'rgba(255,255,255,0.82)' : theme.text2 },
             ]}>
               {action.subtitle}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
 
@@ -149,17 +163,19 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16 },
   sectionTitle: {
-    fontSize: 17, fontWeight: '600',
-    marginTop: 24, marginBottom: 12,
+    fontSize: ui.type.section, fontWeight: '800',
+    marginTop: ui.spacing.xl, marginBottom: ui.spacing.sm,
+    letterSpacing: -0.2,
   },
   actionGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 12,
   },
   actionCard: {
-    width: '47%', borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: 'transparent',
+    width: '47%', borderRadius: ui.radius.lg, padding: 16,
+    borderWidth: 1,
+    ...ui.shadow.card,
   },
   actionIcon: { fontSize: 24, marginBottom: 8 },
-  actionLabel: { fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  actionSub: { fontSize: 12 },
+  actionLabel: { fontSize: 14, fontWeight: '800', marginBottom: 2 },
+  actionSub: { fontSize: 12, lineHeight: 17 },
 });

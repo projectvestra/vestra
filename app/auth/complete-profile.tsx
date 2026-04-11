@@ -12,6 +12,7 @@ import { auth, db } from '../../src/services/firebaseConfig';
 import { claimUsername, isUsernameTaken } from '../../src/services/usernameService';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
+import { linkEmailPasswordToCurrentUser } from '../../src/services/authService';
 import { Colors } from '../../constants/theme';
 
 function defaultDisplayNameFromEmail(email: string) {
@@ -30,6 +31,7 @@ export default function CompleteProfile() {
 
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [password, setPassword] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState(false);
   const [error, setError] = useState('');
@@ -41,7 +43,12 @@ export default function CompleteProfile() {
 
   const mustAskDisplayName = useMemo(() => {
     const providerId = user?.providerData?.[0]?.providerId;
-    return providerId !== 'google.com';
+    return providerId === 'google.com' && !user?.displayName;
+  }, [user]);
+
+  const isGoogleUser = useMemo(() => {
+    const providerId = user?.providerData?.[0]?.providerId;
+    return providerId === 'google.com';
   }, [user]);
 
   useEffect(() => {
@@ -167,6 +174,8 @@ export default function CompleteProfile() {
         {
           displayName: finalDisplayName,
           email: user.email || '',
+          profileSetupComplete: true,
+          authProvider: user.providerData?.[0]?.providerId || 'password',
           updatedAt: new Date().toISOString(),
         },
         { merge: true }
@@ -176,7 +185,16 @@ export default function CompleteProfile() {
         await updateProfile(user, { displayName: finalDisplayName });
       }
 
-      router.replace('/tabs/home');
+      if (isGoogleUser && password.trim()) {
+        const linkResult = await linkEmailPasswordToCurrentUser(password.trim());
+        if (!linkResult.success) {
+          setError(linkResult.message);
+          setLoading(false);
+          return;
+        }
+      }
+
+      router.replace('/onboarding/step1');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to save profile.');
     } finally {
@@ -230,6 +248,20 @@ export default function CompleteProfile() {
           </Text>
         </View>
       )}
+
+      {isGoogleUser ? (
+        <>
+          <TextInput
+            placeholder="Create a password to sign in with email"
+            placeholderTextColor="#999"
+            secureTextEntry
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <Text style={styles.helper}>Optional: add a password so you can log in with email later.</Text>
+        </>
+      ) : null}
 
       <TouchableOpacity style={styles.button} onPress={handleContinue} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Continue</Text>}

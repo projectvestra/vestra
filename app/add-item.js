@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { useTheme } from '../src/context/ThemeContext';
 import {
   uploadWardrobeImage,
   createWardrobeItem
 } from '../src/services/cloudWardrobeService';
+import { ui } from '../src/theme/ui';
 
 const CATEGORIES = [
   'Shirts', 'Pants', 'Shoes', 'Jackets',
@@ -45,6 +47,7 @@ const NO_FIT_CATEGORIES = ['Shoes', 'Sunglasses', 'Accessories'];
 
 export default function AddItem() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [category, setCategory] = useState('Shirts');
   const [size, setSize] = useState(null);
   const [fit, setFit] = useState(null);
@@ -60,7 +63,7 @@ export default function AddItem() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) { Alert.alert('Permission required'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.7,
     });
     if (!result.canceled) setImageUri(result.assets[0].uri);
@@ -105,7 +108,7 @@ export default function AddItem() {
         size: showSize ? size : null,
         fit: showFit ? fit : null,
       });
-      router.back();
+      router.replace({ pathname: '/tabs/wardrobe', params: { toast: 'item-added' } });
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
@@ -114,30 +117,35 @@ export default function AddItem() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Add Item</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]}>
+      <Text style={[styles.title, { color: theme.text }]}>Add Item</Text>
 
       {/* Image Picker */}
-      <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-        <Text>Select from Gallery</Text>
+      <TouchableOpacity style={[styles.imageButton, { backgroundColor: theme.bg2, borderColor: theme.border }]} onPress={pickImage}>
+        <Text style={[styles.imageButtonText, { color: theme.text }]}>Select from Gallery</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.imageButton} onPress={openCamera}>
-        <Text>Use Camera</Text>
+      <TouchableOpacity style={[styles.imageButton, { backgroundColor: theme.bg2, borderColor: theme.border }]} onPress={openCamera}>
+        <Text style={[styles.imageButtonText, { color: theme.text }]}>Use Camera</Text>
       </TouchableOpacity>
       {imageUri && (
-        <Image source={{ uri: imageUri }} style={styles.preview} />
+        <View style={styles.previewWrap}>
+          <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" />
+          <TouchableOpacity style={styles.removePreviewBtn} onPress={() => setImageUri(null)}>
+            <Text style={styles.removePreviewText}>✕</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Category */}
-      <Text style={styles.sectionTitle}>Category</Text>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>Category</Text>
       <View style={styles.row}>
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
             key={cat}
             onPress={() => { setCategory(cat); setSize(null); setFit(null); }}
-            style={[styles.chip, category === cat && styles.activeChip]}
+            style={[styles.chip, { backgroundColor: category === cat ? theme.tint : theme.bg2, borderColor: theme.border }]}
           >
-            <Text style={category === cat ? styles.activeChipText : styles.chipText}>
+            <Text style={[styles.chipText, { color: category === cat ? theme.bg : theme.text }]}>
               {cat}
             </Text>
           </TouchableOpacity>
@@ -146,8 +154,8 @@ export default function AddItem() {
 
       {/* Optional badge for jacket/sunglasses */}
       {(category === 'Jackets' || category === 'Hoodies' || category === 'Sunglasses') && (
-        <View style={styles.optionalBadge}>
-          <Text style={styles.optionalText}>
+        <View style={[styles.optionalBadge, { backgroundColor: theme.bg2, borderLeftColor: theme.tint }]}>
+          <Text style={[styles.optionalText, { color: theme.text2 }]}>
             {category === 'Sunglasses'
               ? 'Sunglasses are optional in outfit generation'
               : `${category} appear in Winter Mode only`}
@@ -158,33 +166,33 @@ export default function AddItem() {
       {/* Size */}
       {showSize && (
         <>
-          <Text style={styles.sectionTitle}>Size</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Size</Text>
           {isShoe ? (
             <>
-              <Text style={styles.subLabel}>US</Text>
+              <Text style={[styles.subLabel, { color: theme.text2 }]}>US</Text>
               <View style={styles.row}>
                 {SHOE_SIZES_US.map((s) => (
                   <TouchableOpacity key={s} onPress={() => setSize(s)}
-                    style={[styles.chip, size === s && styles.activeChip]}>
-                    <Text style={size === s ? styles.activeChipText : styles.chipText}>{s}</Text>
+                    style={[styles.chip, { backgroundColor: size === s ? theme.tint : theme.bg2, borderColor: theme.border }]}>
+                    <Text style={[styles.chipText, { color: size === s ? theme.bg : theme.text }]}>{s}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.subLabel}>UK</Text>
+              <Text style={[styles.subLabel, { color: theme.text2 }]}>UK</Text>
               <View style={styles.row}>
                 {SHOE_SIZES_UK.map((s) => (
                   <TouchableOpacity key={s} onPress={() => setSize(s)}
-                    style={[styles.chip, size === s && styles.activeChip]}>
-                    <Text style={size === s ? styles.activeChipText : styles.chipText}>{s}</Text>
+                    style={[styles.chip, { backgroundColor: size === s ? theme.tint : theme.bg2, borderColor: theme.border }]}>
+                    <Text style={[styles.chipText, { color: size === s ? theme.bg : theme.text }]}>{s}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.subLabel}>EU</Text>
+              <Text style={[styles.subLabel, { color: theme.text2 }]}>EU</Text>
               <View style={styles.row}>
                 {SHOE_SIZES_EU.map((s) => (
                   <TouchableOpacity key={s} onPress={() => setSize(s)}
-                    style={[styles.chip, size === s && styles.activeChip]}>
-                    <Text style={size === s ? styles.activeChipText : styles.chipText}>{s}</Text>
+                    style={[styles.chip, { backgroundColor: size === s ? theme.tint : theme.bg2, borderColor: theme.border }]}>
+                    <Text style={[styles.chipText, { color: size === s ? theme.bg : theme.text }]}>{s}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -193,8 +201,8 @@ export default function AddItem() {
             <View style={styles.row}>
               {CLOTHING_SIZES.map((s) => (
                 <TouchableOpacity key={s} onPress={() => setSize(s)}
-                  style={[styles.chip, size === s && styles.activeChip]}>
-                  <Text style={size === s ? styles.activeChipText : styles.chipText}>{s}</Text>
+                  style={[styles.chip, { backgroundColor: size === s ? theme.tint : theme.bg2, borderColor: theme.border }]}>
+                  <Text style={[styles.chipText, { color: size === s ? theme.bg : theme.text }]}>{s}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -205,19 +213,19 @@ export default function AddItem() {
       {/* Fit */}
       {showFit && (
         <>
-          <Text style={styles.sectionTitle}>Fit (optional)</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Fit (optional)</Text>
           <View style={styles.row}>
             {FITS.map((f) => (
               <TouchableOpacity key={f} onPress={() => setFit(f)}
-                style={[styles.chip, fit === f && styles.activeChip]}>
-                <Text style={fit === f ? styles.activeChipText : styles.chipText}>{f}</Text>
+                style={[styles.chip, { backgroundColor: fit === f ? theme.tint : theme.bg2, borderColor: theme.border }]}>
+                <Text style={[styles.chipText, { color: fit === f ? theme.bg : theme.text }]}>{f}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </>
       )}
 
-      <Text style={styles.sectionTitle}>Colors (pick up to 3)</Text>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>Colors (pick up to 3)</Text>
       <View style={styles.row}>
         {COLOR_OPTIONS.map((colorOption) => {
           const isSelected = selectedColors.some((color) => color.name === colorOption.name);
@@ -225,10 +233,10 @@ export default function AddItem() {
             <TouchableOpacity
               key={colorOption.name}
               onPress={() => toggleColor(colorOption)}
-              style={[styles.colorChip, isSelected && styles.activeColorChip]}
+              style={[styles.colorChip, { backgroundColor: isSelected ? theme.tint : theme.bg2, borderColor: theme.border }]}
             >
               <View style={[styles.colorDot, { backgroundColor: colorOption.hex }]} />
-              <Text style={isSelected ? styles.activeChipText : styles.chipText}>{colorOption.name}</Text>
+              <Text style={[styles.chipText, { color: isSelected ? theme.bg : theme.text }]}>{colorOption.name}</Text>
             </TouchableOpacity>
           );
         })}
@@ -236,11 +244,11 @@ export default function AddItem() {
 
       {/* Save */}
       <TouchableOpacity
-        style={styles.saveButton}
+        style={[styles.saveButton, { backgroundColor: theme.tint }]}
         onPress={handleSave}
         disabled={loading}
       >
-        <Text style={{ color: '#fff' }}>{loading ? 'Saving...' : 'Save Item'}</Text>
+        <Text style={[styles.saveButtonText, { color: theme.bg }]}>{loading ? 'Saving...' : 'Save Item'}</Text>
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />
@@ -249,29 +257,27 @@ export default function AddItem() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: '600', marginBottom: 20 },
-  sectionTitle: { marginTop: 18, marginBottom: 8, fontWeight: '500', fontSize: 15 },
-  subLabel: { fontSize: 12, color: '#888', marginTop: 8, marginBottom: 4, fontWeight: '500' },
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: ui.type.title, fontWeight: '800', marginBottom: 20, letterSpacing: -0.4 },
+  sectionTitle: { marginTop: ui.spacing.lg, marginBottom: 8, fontWeight: '800', fontSize: 15, letterSpacing: -0.2 },
+  subLabel: { fontSize: 11, color: '#888', marginTop: 8, marginBottom: 4, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
   row: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: {
-    paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20,
+    paddingVertical: 7, paddingHorizontal: 12, borderRadius: ui.radius.pill,
     backgroundColor: '#eee', marginRight: 8, marginBottom: 8,
+    borderWidth: 1,
   },
-  activeChip: { backgroundColor: '#000' },
-  chipText: { color: '#333' },
-  activeChipText: { color: '#fff' },
+  chipText: { color: '#333', fontSize: 12, fontWeight: '600' },
   colorChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 7,
     paddingHorizontal: 10,
-    borderRadius: 20,
+    borderRadius: ui.radius.pill,
     backgroundColor: '#eee',
     marginRight: 8,
     marginBottom: 8,
   },
-  activeColorChip: { backgroundColor: '#000' },
   colorDot: {
     width: 14,
     height: 14,
@@ -281,17 +287,41 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   imageButton: {
-    paddingVertical: 12, backgroundColor: '#f4f4f4',
-    borderRadius: 8, marginBottom: 10, alignItems: 'center',
+    paddingVertical: 13,
+    borderRadius: ui.radius.md,
+    marginBottom: 10,
+    alignItems: 'center',
+    borderWidth: 1,
   },
-  preview: { width: '100%', height: 200, borderRadius: 12, marginVertical: 16 },
+  imageButtonText: { fontSize: 14, fontWeight: '700' },
+  previewWrap: { width: '100%', height: 220, borderRadius: ui.radius.lg, marginVertical: 16, backgroundColor: '#f5f5f5', overflow: 'hidden' },
+  preview: { width: '100%', height: '100%' },
+  removePreviewBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(17,17,17,0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removePreviewText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   saveButton: {
-    backgroundColor: '#000', paddingVertical: 14,
-    borderRadius: 8, alignItems: 'center', marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: ui.radius.md,
+    alignItems: 'center',
+    marginTop: 20,
   },
+  saveButtonText: { fontWeight: '800', fontSize: 14 },
   optionalBadge: {
-    backgroundColor: '#f0f7ff', borderRadius: 8,
-    padding: 10, marginTop: 8, borderLeftWidth: 3, borderLeftColor: '#3b82f6',
+    backgroundColor: '#f0f7ff',
+    borderRadius: ui.radius.md,
+    padding: 10,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
   },
-  optionalText: { fontSize: 12, color: '#3b82f6' },
+  optionalText: { fontSize: 12, lineHeight: 18 },
 });

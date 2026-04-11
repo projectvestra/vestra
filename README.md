@@ -3,7 +3,7 @@
 A cutting-edge mobile application that helps users plan outfits intelligently using ML-powered recommendations, AI styling suggestions, and personal preference tracking. Built with React Native and powered by anthropic AI.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Status](https://img.shields.io/badge/status-Active%20Development-green)
+![Status](https://img.shields.io/badge/status-Production%20Polish-green)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-brightgreen)
 
 ---
@@ -58,33 +58,46 @@ A cutting-edge mobile application that helps users plan outfits intelligently us
 #### 6. **Shopping Integration** 🛍️
 - Browse marketplace for recommended items
 - Find similar items from online stores
-- Price comparisons
+- Save products to wishlist
+- Rotating curated catalog for better discovery
 - Direct product links
 
-#### 7. **Search & Discovery** 🔍
+#### 7. **Settings & Account Security** 🔐
+- Dedicated settings screen
+- Change password flow
+- Notification preference toggle
+- Dark mode preference toggle
+
+#### 8. **Search & Discovery** 🔍
 - Search wardrobe items
 - Filter by category, color, brand
 - Search marketplace products
 - Advanced filtering options
 
-#### 8. **Multi-Step Onboarding** 🚀
+#### 9. **Multi-Step Onboarding** 🚀
 - **Step 1**: Basic details (name, age, gender)
 - **Step 2**: Style preferences (casual, formal, sporty, etc.)
 - **Step 3**: Color preferences and skin tone
 - **Step 4**: Clothing constraints (budget, dress codes, religious preferences)
 
-#### 9. **Dark Mode** 🌙
+#### 10. **Dark Mode** 🌙
 - Full dark mode support
 - Automatic theme switching
 - User-configurable theme preferences
 - Persistent theme settings
 
-#### 10. **User Preferences** ⚙️
+#### 11. **User Preferences** ⚙️
 - Notification settings
 - Theme preferences
 - Display name and username
 - Profile information
 - Style history
+
+#### 12. **Production Polish** ✨
+- Calibrated soft contrast color system
+- Reduced visual clutter and heavy container styling
+- Improved tactile press feedback across primary interactions
+- FlatList rendering optimizations for smoother perception
 
 ---
 
@@ -115,6 +128,8 @@ A cutting-edge mobile application that helps users plan outfits intelligently us
 - **Expo Vector Icons 15.0.3** - Icon library
 - **Safe Area Context 5.6.0** - Safe area handling
 - **Reanimated 4.1.1** - Smooth animations
+- **Expo Linear Gradient 55.0.13** - Layered surface treatments
+- **Expo Notifications 55.0.18** - Notification permission and delivery support
 
 ### Authentication
 - **@firebase/auth 1.12.1** - Firebase authentication
@@ -175,13 +190,16 @@ EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 # Google Authentication
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_web_client_id
-EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your_android_client_id
 
 # AI Backend
-ANTHROPIC_API_KEY=your_anthropic_key
+EXPO_PUBLIC_RECOMMENDATION_API_URL=https://your-ai-backend-domain
 
 # Marketplace API
 EXPO_PUBLIC_MARKETPLACE_API_URL=https://your-domain.com/api/marketplace/products
+
+# Optional local admin gating for private dev tools
+EXPO_PUBLIC_NOTIFICATION_ADMIN_UID=your_firebase_uid
+EXPO_PUBLIC_NOTIFICATION_ADMIN_EMAIL=your_email@example.com
 ```
 
 Marketplace endpoint response example:
@@ -209,6 +227,10 @@ Notes:
 - Product URL fields supported are affiliateUrl, url, link, productUrl, links.product, links.affiliate, and product.url.
 - The app reads the endpoint from app extra marketplace apiUrl first, then EXPO_PUBLIC_MARKETPLACE_API_URL.
 
+Recommendation API notes:
+- The app reads recommendation endpoint from app extra recommendation apiUrl first, then EXPO_PUBLIC_RECOMMENDATION_API_URL.
+- If backend is unavailable, the app falls back to local recommendation logic.
+
 ### 4. Set Up Firebase Project
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Create a new project
@@ -225,8 +247,8 @@ Notes:
 
 ### 6. Set Up Anthropic API
 1. Sign up at [Anthropic](https://console.anthropic.com/)
-2. Generate API key
-3. Add to `.env` file as `ANTHROPIC_API_KEY`
+2. Deploy your recommendation backend and expose a base URL
+3. Add URL to `.env` as `EXPO_PUBLIC_RECOMMENDATION_API_URL`
 
 ---
 
@@ -291,6 +313,8 @@ vestra/
 │   │   ├── step2.tsx             # Style preferences
 │   │   ├── step3.tsx             # Colors
 │   │   └── step4.tsx             # Constraints
+│   ├── settings.tsx              # Settings and account controls
+│   ├── marketplace-wishlist.tsx  # Saved marketplace products
 │   └── _layout.tsx               # App layout
 │
 ├── src/
@@ -300,6 +324,7 @@ vestra/
 │   │   ├── usernameService.js    # Username management
 │   │   ├── userService.js        # User profile
 │   │   ├── recommendationService.js # AI recommendations
+│   │   ├── notificationPermissionService.ts # Push permission handling
 │   │   ├── cloudWardrobeService.js  # Wardrobe cloud sync
 │   │   ├── outfitService.js      # Outfit logic
 │   │   ├── homeService.js        # Home screen data
@@ -320,15 +345,10 @@ vestra/
 │   ├── context/                   # React Context
 │   │   ├── ThemeContext.js        # Dark/light mode
 │   │   └── OnboardingContext.js   # Onboarding state
-│   │
-│   └── screens/                   # Screen components
-│       ├── auth/
-│       │   └── SignupScreen.js
-│       ├── onboarding/
-│       │   ├── BasicDetailsScreen.js
-│       │   ├── StylePreferencesScreen.js
-│       │   ├── ColorPreferencesScreen.js
-│       │   └── ClothingConstraintsScreen.js
+│   ├── theme/
+│   │   └── ui.js                  # Shared spacing, depth, motion tokens
+│   └── components/
+│       └── home/                  # Core home widgets and assistant UI
 │
 ├── outfit-ai-backend/             # FastAPI backend
 │   ├── main.py                   # ML models & recommendations
@@ -428,6 +448,9 @@ python -m uvicorn main:app --reload
 
 Backend will be available at `http://localhost:8000`
 
+Fallback behavior:
+- If remote AI is unavailable, the backend and app return local fallback recommendations instead of failing requests.
+
 ### API Endpoints
 - `GET /health` - Health check
 - `POST /recommend` - Get outfit recommendations
@@ -507,6 +530,8 @@ Deploy to Netlify, Vercel, or any static host.
   constraints: array,
   darkMode: boolean,
   notifications: boolean,
+  authProvider: string,
+  profileSetupComplete: boolean,
   createdAt: timestamp
 }
 ```
@@ -536,6 +561,22 @@ Deploy to Netlify, Vercel, or any static host.
 }
 ```
 
+### notifications
+```
+{
+  title: string,
+  body: string,
+  toAll: boolean,
+  audience: string,
+  includeSender: boolean,
+  requiresPushPermission: boolean,
+  sentByUid: string,
+  sentByEmail: string,
+  createdAt: timestamp,
+  read: boolean
+}
+```
+
 ---
 
 ## 🐛 Troubleshooting
@@ -557,7 +598,7 @@ npm run reset-project
 
 ### Google Sign-In Not Working
 - Verify OAuth credentials are correct
-- Check androidClientId and webClientId
+- Check webClientId configuration
 - Ensure app is signed with correct keystore
 - Verify SHA1 fingerprint in Firebase
 
@@ -568,10 +609,14 @@ npm run reset-project
 - Look for error messages in console
 
 ### AI Recommendations Not Working
-- Check ANTHROPIC_API_KEY is set
-- Verify API key has usage quota
-- Check backend is running
-- Look for API errors in console
+- Verify recommendation backend URL is reachable
+- Check backend service logs for AI provider errors
+- Confirm app fallback mode is active when backend is down
+
+### Notifications Not Appearing
+- Confirm user granted notification permission
+- Check user notification preference toggle in settings
+- Validate notification payload uses opted-in broadcast audience
 
 ---
 
@@ -693,7 +738,7 @@ For questions or feedback, reach out to the development team.
 
 ## 📝 Version History
 
-### v1.0.0 (Current)
+### v1.0.1 (Current)
 - ✅ User authentication (email/username)
 - ✅ Multi-step onboarding
 - ✅ AI outfit recommendations
@@ -704,9 +749,14 @@ For questions or feedback, reach out to the development team.
 - ✅ Session persistence
 - ✅ Shopping integration
 - ✅ Explore feed
+- ✅ Marketplace wishlist and rotating catalog
+- ✅ Settings screen with password change
+- ✅ One-time notification permission flow
+- ✅ Backend fallback recommendation behavior
+- ✅ Production polish pass (minimalism, smoothness, list rendering)
 
 ---
 
 **Built with ❤️ for fashion lovers and tech enthusiasts**
 
-Last Updated: April 6, 2026
+Last Updated: April 11, 2026

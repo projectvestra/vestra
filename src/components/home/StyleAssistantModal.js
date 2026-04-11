@@ -421,7 +421,14 @@ export default function StyleAssistantModal({ visible, onClose, wardrobe = [] })
               { label: 'Shoes',   items: shoesList, locked: lockedShoes,  setLocked: setLockedShoes },
             ].map(group => (
               <View key={group.label} style={s.lockGroup}>
-                <Text style={s.lockGroupLabel}>{group.label}</Text>
+                <View style={s.lockGroupHeader}>
+                  <Text style={s.lockGroupLabel}>{group.label}</Text>
+                  {group.locked ? (
+                    <TouchableOpacity style={s.lockClearBtn} onPress={() => group.setLocked(null)}>
+                      <Text style={s.lockClearBtnText}>✕ Clear</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {group.items.length === 0 ? (
                     <Text style={s.emptyGroupText}>No {group.label.toLowerCase()} in wardrobe</Text>
@@ -600,7 +607,10 @@ const s = StyleSheet.create({
   lockArea:          { flex: 1, padding: 16 },
   lockHint:          { fontSize: 13, color: '#888', marginBottom: 20, lineHeight: 20 },
   lockGroup:         { marginBottom: 24 },
+  lockGroupHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   lockGroupLabel:    { fontSize: 13, fontWeight: '600', color: '#333', marginBottom: 10, letterSpacing: 0.5 },
+  lockClearBtn:      { backgroundColor: '#f3f4f6', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  lockClearBtnText:  { fontSize: 11, color: '#374151', fontWeight: '600' },
   emptyGroupText:    { fontSize: 12, color: '#bbb', paddingVertical: 12 },
   lockItem:          { width: 80, height: 100, marginRight: 10, borderRadius: 12, borderWidth: 1.5, borderColor: '#e5e5e5', overflow: 'visible', alignItems: 'center' },
   lockItemActive:    { borderColor: '#000', borderWidth: 2 },

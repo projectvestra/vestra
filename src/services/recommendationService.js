@@ -1,9 +1,43 @@
 // src/services/recommendationService.js
+import Constants from 'expo-constants';
 import { getUserWardrobeItems } from './cloudWardrobeService';
 
-// Your PC's IP — run ipconfig to find it
-// Must be on same WiFi as phone
-const API_BASE = 'http://192.168.1.4:8000';
+const expoExtra = Constants.expoConfig?.extra || {};
+const configuredRecommendationApiUrl =
+  expoExtra.recommendation?.apiUrl ||
+  expoExtra.backend?.apiUrl ||
+  process.env.EXPO_PUBLIC_RECOMMENDATION_API_URL ||
+  process.env.EXPO_PUBLIC_BACKEND_API_URL ||
+  '';
+const normalizedRecommendationApiUrl =
+  configuredRecommendationApiUrl && !/^https?:\/\//i.test(configuredRecommendationApiUrl)
+    ? `https://${configuredRecommendationApiUrl}`
+    : configuredRecommendationApiUrl;
+const API_BASE = normalizedRecommendationApiUrl.replace(/\/$/, '');
+
+const RECOMMEND_TIMEOUT_MS = 12000;
+const WEEKLY_PLAN_TIMEOUT_MS = 15000;
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`Backend request failed (${response.status}): ${body || response.statusText}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 const COLOR_HARMONY = {
   white:   { black:9, navy:9, grey:9, beige:8, tan:8, brown:7, white:4 },
@@ -127,6 +161,12 @@ export async function getRecommendations({
     return { outfits: [], error: 'Add at least 3 items to your wardrobe first' };
   }
 
+  if (!API_BASE) {
+    console.log('[recommendationService] getRecommendations: backend URL missing, using local scoring');
+    const outfits = generateCombinations(wardrobe, occasion, temperatureC, lockedTop, lockedBottom, lockedShoes);
+    return { outfits, source: 'local' };
+  }
+
   // Try Python backend first
   try {
     console.log('[recommendationService] getRecommendations: trying backend', {
@@ -134,9 +174,6 @@ export async function getRecommendations({
       temperatureC,
       wardrobeCount: wardrobe.length,
     });
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-
     const formData = new FormData();
     formData.append('occasion', occasion);
     formData.append('temperature_c', String(temperatureC));
@@ -145,14 +182,11 @@ export async function getRecommendations({
     if (lockedBottom) formData.append('locked_bottom_id', lockedBottom.id);
     if (lockedShoes) formData.append('locked_shoes_id', lockedShoes.id);
 
-    const res = await fetch(`${API_BASE}/recommend`, {
+    const data = await fetchJsonWithTimeout(`${API_BASE}/recommend`, {
       method: 'POST',
       body: formData,
-      signal: controller.signal,
-    });
+    }, RECOMMEND_TIMEOUT_MS);
 
-    clearTimeout(timeout);
-    const data = await res.json();
     console.log('[recommendationService] getRecommendations: backend response', {
       source: data?.source || 'ai',
       outfits: Array.isArray(data?.outfits) ? data.outfits.length : 0,
@@ -161,7 +195,8 @@ export async function getRecommendations({
 
   } catch (e) {
     // Backend not running — fall back to local scoring
-    console.log('[recommendationService] getRecommendations: falling back to local scoring', e);
+    const reason = e?.name === 'AbortError' ? `timeout after ${RECOMMEND_TIMEOUT_MS}ms` : e;
+    console.log('[recommendationService] getRecommendations: falling back to local scoring', reason);
     const outfits = generateCombinations(wardrobe, occasion, temperatureC, lockedTop, lockedBottom, lockedShoes);
     return { outfits, source: 'local' };
   }
@@ -171,6 +206,11 @@ export { getItemCategory, getColor };
 
 export async function getAIWeeklyPlan(wardrobe, occasions) {
   try {
+    if (!API_BASE) {
+      console.log('[recommendationService] getAIWeeklyPlan: backend URL missing, using local planner flow');
+      return null;
+    }
+
     console.log('[recommendationService] getAIWeeklyPlan: trying backend', {
       wardrobeCount: Array.isArray(wardrobe) ? wardrobe.length : 0,
       occasions,
@@ -179,11 +219,11 @@ export async function getAIWeeklyPlan(wardrobe, occasions) {
     formData.append('wardrobe_json', JSON.stringify(wardrobe));
     formData.append('occasions_json', JSON.stringify(occasions));
 
-    const res = await fetch(`${API_BASE}/weekly-plan`, {
+    const data = await fetchJsonWithTimeout(`${API_BASE}/weekly-plan`, {
       method: 'POST',
       body: formData,
-    });
-    const data = await res.json();
+    }, WEEKLY_PLAN_TIMEOUT_MS);
+
     console.log('[recommendationService] getAIWeeklyPlan: backend response', {
       source: data?.source || 'ai',
       hasPlan: !!data?.plan && Object.keys(data.plan || {}).length > 0,

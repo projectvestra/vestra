@@ -150,3 +150,11 @@ export async function getUserWardrobeItems() {
     throw error;
   }
 }
+
+export async function clearWardrobeCache() {
+  try {
+    await AsyncStorage.removeItem(CACHE_KEY);
+  } catch {
+    // no-op
+  }
+}

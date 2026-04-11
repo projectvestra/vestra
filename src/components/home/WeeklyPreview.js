@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
+import { ui } from '../../theme/ui';
 
 const OCCASION_COLORS = {
   'casual':       '#f0f0f0',
@@ -24,9 +25,12 @@ export default function WeeklyPreview({ weeklyData = [], planData = {} }) {
 
   if (!weeklyData || weeklyData.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.bg2 }]}> 
+      <View style={[styles.container, { backgroundColor: theme.bg2, borderColor: theme.border }]}> 
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Weekly Preview</Text>
+          <View>
+            <Text style={[styles.eyebrow, { color: theme.text2 }]}>Planning</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Weekly Preview</Text>
+          </View>
           <TouchableOpacity onPress={() => router.push('/tabs/planner')}>
             <Text style={[styles.seeAll, { color: theme.tint }]}>Plan Week →</Text>
           </TouchableOpacity>
@@ -46,9 +50,12 @@ export default function WeeklyPreview({ weeklyData = [], planData = {} }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg2 }]}> 
+    <View style={[styles.container, { backgroundColor: theme.bg2, borderColor: theme.border }]}> 
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>This Week</Text>
+        <View>
+          <Text style={[styles.eyebrow, { color: theme.text2 }]}>Planning</Text>
+          <Text style={[styles.title, { color: theme.text }]}>This Week</Text>
+        </View>
         <TouchableOpacity onPress={() => router.push('/tabs/planner')}>
           <Text style={[styles.seeAll, { color: theme.tint }]}>Plan Week →</Text>
         </TouchableOpacity>
@@ -65,7 +72,7 @@ export default function WeeklyPreview({ weeklyData = [], planData = {} }) {
           return (
             <TouchableOpacity
               key={day}
-              style={[styles.dayCard, { backgroundColor: bgColor }]}
+              style={[styles.dayCard, { backgroundColor: bgColor, borderColor: 'rgba(0,0,0,0.05)' }]}
               onPress={() => router.push('/tabs/planner')}
             >
               <Text style={styles.dayLabel}>{day}</Text>
@@ -100,20 +107,21 @@ export default function WeeklyPreview({ weeklyData = [], planData = {} }) {
 }
 
 const styles = StyleSheet.create({
-  container:     { marginTop: 24 },
-  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title:         { fontSize: 17, fontWeight: '600' },
-  seeAll:        { fontSize: 13, color: '#0a7ea4', fontWeight: '500' },
-  dayCard:       { width: 80, marginRight: 10, borderRadius: 14, padding: 10, alignItems: 'center' },
-  dayLabel:      { fontSize: 12, fontWeight: '700', color: '#333', marginBottom: 6 },
+  container:     { marginTop: ui.spacing.xl, padding: ui.spacing.md, borderRadius: ui.radius.lg, borderWidth: 1, ...ui.shadow.card },
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: ui.spacing.sm },
+  eyebrow:       { fontSize: ui.type.eyebrow, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
+  title:         { fontSize: ui.type.section, fontWeight: '800', letterSpacing: -0.2 },
+  seeAll:        { fontSize: 13, fontWeight: '700' },
+  dayCard:       { width: 84, marginRight: 10, borderRadius: ui.radius.md, padding: 10, alignItems: 'center', borderWidth: 1 },
+  dayLabel:      { fontSize: 12, fontWeight: '800', color: '#333', marginBottom: 6, letterSpacing: 0.4 },
   outfitMini:    { flexDirection: 'row', gap: 2, marginBottom: 6 },
-  miniImg:       { width: 28, height: 34, borderRadius: 6 },
-  emptyMini:     { width: 60, height: 34, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  miniImg:       { width: 28, height: 36, borderRadius: 6 },
+  emptyMini:     { width: 60, height: 36, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   emptyMiniText: { fontSize: 18, color: '#999' },
-  occasionTag:   { fontSize: 9, color: '#555', fontWeight: '600', textAlign: 'center' },
-  emptyCard:     { padding: 18, borderRadius: 18, marginTop: 6, borderWidth: 1, borderColor: '#e0e0e0' },
-  emptyText:     { fontSize: 14, fontWeight: '600', marginBottom: 6 },
+  occasionTag:   { fontSize: 10, color: '#555', fontWeight: '700', textAlign: 'center', textTransform: 'capitalize' },
+  emptyCard:     { padding: 18, borderRadius: ui.radius.lg, marginTop: 6, borderWidth: 1, borderColor: '#e0e0e0' },
+  emptyText:     { fontSize: 14, fontWeight: '700', marginBottom: 6 },
   emptySub:      { fontSize: 13, lineHeight: 20, marginBottom: 12 },
-  generateBtn:   { paddingVertical: 12, borderRadius: 14, alignItems: 'center' },
+  generateBtn:   { paddingVertical: 12, borderRadius: ui.radius.md, alignItems: 'center' },
   generateBtnText:{ color: '#fff', fontWeight: '700' },
 });

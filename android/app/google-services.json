@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "219404516716-3dv2u1qt8nh0qo8j0m4r95eueu31ffad.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anonymous.vestra",
+            "certificate_hash": "550526490901f7e6f8f6d8d1c21b7958a3ab16fc"
+          }
+        },
+        {
           "client_id": "219404516716-v7h6056denjajcf35o53f6dgv32faafu.apps.googleusercontent.com",
           "client_type": 3
         }
