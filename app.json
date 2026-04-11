@@ -27,7 +27,7 @@
       },
       "router": {},
       "eas": {
-        "projectId": "4361b3f6-e7c3-4c5b-b63a-391242df5439"
+        "projectId": "e7fa2f2a-d0d9-47f3-bf7d-10b1a64371d0"
       }
     },
     "ios": {
@@ -75,9 +75,6 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "owner": "areyoukaran",
-    "updates": {
-      "url": "https://u.expo.dev/4361b3f6-e7c3-4c5b-b63a-391242df5439"
-    }
+    "owner": "vestraorg"
   }
 }
