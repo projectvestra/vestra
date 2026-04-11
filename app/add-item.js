@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../src/context/ThemeContext';
 import {
   uploadWardrobeImage,
@@ -47,6 +48,7 @@ const NO_FIT_CATEGORIES = ['Shoes', 'Sunglasses', 'Accessories'];
 
 export default function AddItem() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const [category, setCategory] = useState('Shirts');
   const [size, setSize] = useState(null);
@@ -117,8 +119,18 @@ export default function AddItem() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]}>
-      <Text style={[styles.title, { color: theme.text }]}>Add Item</Text>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Back Button + Title */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={[styles.backText, { color: theme.text2 }]}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: theme.text }]}>Add Item</Text>
+      </View>
 
       {/* Image Picker */}
       <TouchableOpacity style={[styles.imageButton, { backgroundColor: theme.bg2, borderColor: theme.border }]} onPress={pickImage}>
@@ -258,7 +270,21 @@ export default function AddItem() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  title: { fontSize: ui.type.title, fontWeight: '800', marginBottom: 20, letterSpacing: -0.4 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    gap: 12,
+  },
+  backButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  backText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  title: { fontSize: ui.type.title, fontWeight: '800', marginBottom: 0, letterSpacing: -0.4 },
   sectionTitle: { marginTop: ui.spacing.lg, marginBottom: 8, fontWeight: '800', fontSize: 15, letterSpacing: -0.2 },
   subLabel: { fontSize: 11, color: '#888', marginTop: 8, marginBottom: 4, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
   row: { flexDirection: 'row', flexWrap: 'wrap' },

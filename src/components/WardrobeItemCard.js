@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { deleteWardrobeItemCloud, updateWardrobeItem } from '../services/cloudWardrobeService';
 import { getShoppingLinks } from '../services/shopSearchService';
+import { useTheme } from '../context/ThemeContext';
 import { ui } from '../theme/ui';
 
 const CATEGORIES = ['Shirts', 'Pants', 'Shoes', 'Accessories'];
@@ -25,6 +26,7 @@ const SHOE_SIZES_EU = ['EU 38', 'EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU
 const FITS = ['Slim', 'Regular', 'Relaxed', 'Oversized', 'Skinny', 'Straight', 'Wide Leg', 'Tapered'];
 
 export default function WardrobeItemCard({ item, onDelete, onEdit }) {
+  const { theme, isDark } = useTheme();
   const [visible, setVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [shopMode, setShopMode] = useState(false);
@@ -108,7 +110,7 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
       {/* Grid Card */}
       <Animated.View style={[styles.cardWrapper, { transform: [{ scale: cardScale }] }]}>
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, { backgroundColor: theme.bg2, borderColor: theme.border }]}
           activeOpacity={0.9}
           onPressIn={() => Animated.spring(cardScale, { toValue: 0.96, useNativeDriver: true }).start()}
           onPressOut={() => Animated.spring(cardScale, { toValue: 1, useNativeDriver: true }).start()}
@@ -117,17 +119,20 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
         >
           <Image source={{ uri: item.image }} style={styles.image} />
           <View style={styles.cardMeta}>
-            <Text style={styles.name} numberOfLines={1}>{item.name || item.category}</Text>
-            {item.size ? <Text style={styles.sizeTag}>{item.size}</Text> : null}
+            <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{item.name || item.category}</Text>
+            {item.size ? <Text style={[styles.sizeTag, { color: theme.text2 }]}>{item.size}</Text> : null}
           </View>
         </TouchableOpacity>
       </Animated.View>
 
       {/* Detail / Edit / Shop Modal */}
       <Modal visible={visible} transparent animationType="none">
-        <Pressable style={styles.overlay} onPress={closeCard}>
+        <Pressable style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.64)' : 'rgba(0,0,0,0.4)' }]} onPress={closeCard}>
           <Animated.View
-            style={[styles.expandedCard, { transform: [{ scale: overlayScale }], opacity: overlayOpacity }]}
+            style={[
+              styles.expandedCard,
+              { transform: [{ scale: overlayScale }], opacity: overlayOpacity, backgroundColor: theme.bg2, borderColor: theme.border },
+            ]}
           >
             <Pressable onPress={() => {}}>
 
@@ -135,11 +140,11 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
               {!editMode && !shopMode && (
                 <ScrollView showsVerticalScrollIndicator={false}>
                   <Image source={{ uri: item.image }} style={styles.largeImage} />
-                  <Text style={styles.title}>{item.name || item.category}</Text>
+                  <Text style={[styles.title, { color: theme.text }]}>{item.name || item.category}</Text>
 
                   <View style={styles.metaRow}>
                     <View style={[styles.colorDot, { backgroundColor: item.color || '#ccc' }]} />
-                    <Text style={styles.metaText}>
+                    <Text style={[styles.metaText, { color: theme.text2 }]}>
                       {item.colorNames?.length ? item.colorNames.join(', ') : (item.colorName || item.category)}
                     </Text>
                   </View>
@@ -153,16 +158,16 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
                       ))}
                     </View>
                   ) : null}
-                  {item.size && <Text style={styles.metaText}>Size: {item.size}</Text>}
-                  {item.fit && <Text style={styles.metaText}>Fit: {item.fit}</Text>}
+                  {item.size && <Text style={[styles.metaText, { color: theme.text2 }]}>Size: {item.size}</Text>}
+                  {item.fit && <Text style={[styles.metaText, { color: theme.text2 }]}>Fit: {item.fit}</Text>}
 
                   {/* Action buttons */}
                   <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.editButton} onPress={() => setEditMode(true)}>
-                      <Text style={styles.editButtonText}>✎ Edit</Text>
+                    <TouchableOpacity style={[styles.editButton, { borderColor: theme.border, backgroundColor: theme.bg3 }]} onPress={() => setEditMode(true)}>
+                      <Text style={[styles.editButtonText, { color: theme.text }]}>✎ Edit</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.shopButton} onPress={() => setShopMode(true)}>
-                      <Text style={styles.shopButtonText}>🛍 Shop</Text>
+                    <TouchableOpacity style={[styles.shopButton, { backgroundColor: theme.tint }]} onPress={() => setShopMode(true)}>
+                      <Text style={[styles.shopButtonText, { color: theme.bg }]}>🛍 Shop</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -175,45 +180,49 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
               {/* ── EDIT MODE ── */}
               {editMode && (
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  <Text style={styles.title}>Edit Item</Text>
+                  <Text style={[styles.title, { color: theme.text }]}>Edit Item</Text>
 
-                  <Text style={styles.sectionLabel}>Category</Text>
+                  <Text style={[styles.sectionLabel, { color: theme.text2 }]}>Category</Text>
                   <View style={styles.chipRow}>
                     {CATEGORIES.map(cat => (
                       <TouchableOpacity
                         key={cat}
-                        style={[styles.chip, editCategory === cat && styles.chipActive]}
+                        style={[
+                          styles.chip,
+                          { backgroundColor: theme.bg3, borderColor: theme.border },
+                          editCategory === cat && [styles.chipActive, { backgroundColor: theme.tint, borderColor: theme.tint }],
+                        ]}
                         onPress={() => { setEditCategory(cat); setEditSize(null); }}
                       >
-                        <Text style={editCategory === cat ? styles.chipTextActive : styles.chipText}>{cat}</Text>
+                        <Text style={editCategory === cat ? [styles.chipTextActive, { color: theme.bg }] : [styles.chipText, { color: theme.text2 }]}>{cat}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
 
-                  <Text style={styles.sectionLabel}>Size</Text>
+                  <Text style={[styles.sectionLabel, { color: theme.text2 }]}>Size</Text>
                   {isShoe ? (
                     <>
-                      <Text style={styles.subLabel}>US</Text>
+                      <Text style={[styles.subLabel, { color: theme.text3 }]}>US</Text>
                       <View style={styles.chipRow}>
                         {SHOE_SIZES_US.map(s => (
-                          <TouchableOpacity key={s} style={[styles.chip, editSize === s && styles.chipActive]} onPress={() => setEditSize(s)}>
-                            <Text style={editSize === s ? styles.chipTextActive : styles.chipText}>{s}</Text>
+                          <TouchableOpacity key={s} style={[styles.chip, { backgroundColor: theme.bg3, borderColor: theme.border }, editSize === s && [styles.chipActive, { backgroundColor: theme.tint, borderColor: theme.tint }]]} onPress={() => setEditSize(s)}>
+                            <Text style={editSize === s ? [styles.chipTextActive, { color: theme.bg }] : [styles.chipText, { color: theme.text2 }]}>{s}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
-                      <Text style={styles.subLabel}>UK</Text>
+                      <Text style={[styles.subLabel, { color: theme.text3 }]}>UK</Text>
                       <View style={styles.chipRow}>
                         {SHOE_SIZES_UK.map(s => (
-                          <TouchableOpacity key={s} style={[styles.chip, editSize === s && styles.chipActive]} onPress={() => setEditSize(s)}>
-                            <Text style={editSize === s ? styles.chipTextActive : styles.chipText}>{s}</Text>
+                          <TouchableOpacity key={s} style={[styles.chip, { backgroundColor: theme.bg3, borderColor: theme.border }, editSize === s && [styles.chipActive, { backgroundColor: theme.tint, borderColor: theme.tint }]]} onPress={() => setEditSize(s)}>
+                            <Text style={editSize === s ? [styles.chipTextActive, { color: theme.bg }] : [styles.chipText, { color: theme.text2 }]}>{s}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
-                      <Text style={styles.subLabel}>EU</Text>
+                      <Text style={[styles.subLabel, { color: theme.text3 }]}>EU</Text>
                       <View style={styles.chipRow}>
                         {SHOE_SIZES_EU.map(s => (
-                          <TouchableOpacity key={s} style={[styles.chip, editSize === s && styles.chipActive]} onPress={() => setEditSize(s)}>
-                            <Text style={editSize === s ? styles.chipTextActive : styles.chipText}>{s}</Text>
+                          <TouchableOpacity key={s} style={[styles.chip, { backgroundColor: theme.bg3, borderColor: theme.border }, editSize === s && [styles.chipActive, { backgroundColor: theme.tint, borderColor: theme.tint }]]} onPress={() => setEditSize(s)}>
+                            <Text style={editSize === s ? [styles.chipTextActive, { color: theme.bg }] : [styles.chipText, { color: theme.text2 }]}>{s}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -221,8 +230,8 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
                   ) : (
                     <View style={styles.chipRow}>
                       {CLOTHING_SIZES.map(s => (
-                        <TouchableOpacity key={s} style={[styles.chip, editSize === s && styles.chipActive]} onPress={() => setEditSize(s)}>
-                          <Text style={editSize === s ? styles.chipTextActive : styles.chipText}>{s}</Text>
+                        <TouchableOpacity key={s} style={[styles.chip, { backgroundColor: theme.bg3, borderColor: theme.border }, editSize === s && [styles.chipActive, { backgroundColor: theme.tint, borderColor: theme.tint }]]} onPress={() => setEditSize(s)}>
+                          <Text style={editSize === s ? [styles.chipTextActive, { color: theme.bg }] : [styles.chipText, { color: theme.text2 }]}>{s}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -230,11 +239,11 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
 
                   {!isShoe && (
                     <>
-                      <Text style={styles.sectionLabel}>Fit</Text>
+                      <Text style={[styles.sectionLabel, { color: theme.text2 }]}>Fit</Text>
                       <View style={styles.chipRow}>
                         {FITS.map(f => (
-                          <TouchableOpacity key={f} style={[styles.chip, editFit === f && styles.chipActive]} onPress={() => setEditFit(f)}>
-                            <Text style={editFit === f ? styles.chipTextActive : styles.chipText}>{f}</Text>
+                          <TouchableOpacity key={f} style={[styles.chip, { backgroundColor: theme.bg3, borderColor: theme.border }, editFit === f && [styles.chipActive, { backgroundColor: theme.tint, borderColor: theme.tint }]]} onPress={() => setEditFit(f)}>
+                            <Text style={editFit === f ? [styles.chipTextActive, { color: theme.bg }] : [styles.chipText, { color: theme.text2 }]}>{f}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -242,11 +251,11 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
                   )}
 
                   <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.editButton} onPress={() => setEditMode(false)}>
-                      <Text style={styles.editButtonText}>Cancel</Text>
+                    <TouchableOpacity style={[styles.editButton, { borderColor: theme.border, backgroundColor: theme.bg3 }]} onPress={() => setEditMode(false)}>
+                      <Text style={[styles.editButtonText, { color: theme.text }]}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.shopButton} onPress={handleSaveEdit} disabled={saving}>
-                      <Text style={styles.shopButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
+                    <TouchableOpacity style={[styles.shopButton, { backgroundColor: theme.tint }]} onPress={handleSaveEdit} disabled={saving}>
+                      <Text style={[styles.shopButtonText, { color: theme.bg }]}>{saving ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
                   </View>
                 </ScrollView>
@@ -255,13 +264,13 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
               {/* ── SHOP MODE ── */}
               {shopMode && (
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  <Text style={styles.title}>Shop this item</Text>
+                  <Text style={[styles.title, { color: theme.text }]}>Shop this item</Text>
                   <Image source={{ uri: item.image }} style={styles.shopPreviewImg} />
-                  <Text style={styles.shopItemName}>
+                  <Text style={[styles.shopItemName, { color: theme.text2 }]}>
                     {(item.colorNames?.[0] || item.colorName || 'Any color')} {item.category}
                   </Text>
 
-                  <Text style={styles.sectionLabel}>Find exact or similar item on:</Text>
+                  <Text style={[styles.sectionLabel, { color: theme.text2 }]}>Find exact or similar item on:</Text>
 
                   {/* Platform buttons */}
                   {[
@@ -279,16 +288,16 @@ export default function WardrobeItemCard({ item, onDelete, onEdit }) {
                       <Text style={[styles.platformBtnText, { color: platform.color }]}>
                         Search on {platform.name}
                       </Text>
-                      <Text style={styles.platformArrow}>→</Text>
+                      <Text style={[styles.platformArrow, { color: theme.icon }]}>→</Text>
                     </TouchableOpacity>
                   ))}
 
-                  <Text style={styles.shopNote}>
+                  <Text style={[styles.shopNote, { color: theme.text3 }]}>
                     Opens search for: {item.colorNames?.[0] || item.colorName || 'Any'} {item.category}
                   </Text>
 
-                  <TouchableOpacity style={styles.editButton} onPress={() => setShopMode(false)}>
-                    <Text style={styles.editButtonText}>← Back</Text>
+                  <TouchableOpacity style={[styles.editButton, { borderColor: theme.border, backgroundColor: theme.bg3 }]} onPress={() => setShopMode(false)}>
+                    <Text style={[styles.editButtonText, { color: theme.text }]}>← Back</Text>
                   </TouchableOpacity>
                 </ScrollView>
               )}
@@ -307,9 +316,9 @@ const styles = StyleSheet.create({
     margin: 6,
   },
   card: {
-    backgroundColor: '#f8f8f8',
     borderRadius: ui.radius.lg,
     padding: 8,
+    borderWidth: 1,
     ...ui.shadow.card,
   },
   image: {
@@ -342,9 +351,9 @@ const styles = StyleSheet.create({
   expandedCard: {
     width: '88%',
     maxHeight: '85%',
-    backgroundColor: '#fff',
     borderRadius: ui.radius.xl,
     padding: 18,
+    borderWidth: 1,
   },
   largeImage: {
     width: '100%',

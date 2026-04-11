@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ScrollView, StyleSheet, View, Text,
   Pressable,
@@ -11,7 +11,6 @@ import TodayOutfitCard from '../../src/components/home/TodayOutfitCard';
 import WeeklyPreview from '../../src/components/home/WeeklyPreview';
 import StyleAssistantModal from '../../src/components/home/StyleAssistantModal';
 import {
-  getHomeSummary,
   getTodayOutfit,
   getWeeklyPreview,
 } from '../../src/services/homeService';
@@ -34,11 +33,6 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
-  const [summary, setSummary] = useState<{
-    totalItems: number;
-    recentItem: WardrobeItem | null;
-  }>({ totalItems: 0, recentItem: null });
-
   const [outfit, setOutfit] = useState({});
   const [weekly, setWeekly] = useState<{ day: string; tag: string }[]>([]);
   const [planData, setPlanData] = useState<Record<string, any>>({});
@@ -47,13 +41,11 @@ export default function Home() {
 
   const loadData = useCallback(async () => {
     try {
-      const [summaryData, outfitData, weeklyPreview, wardrobeData] = await Promise.all([
-        getHomeSummary(),
+      const [outfitData, weeklyPreview, wardrobeData] = await Promise.all([
         getTodayOutfit(),
         getWeeklyPreview(),
         getUserWardrobeItems(),
       ]);
-      setSummary(summaryData);
       setOutfit(outfitData);
       setWeekly(weeklyPreview.weeklyData || []);
       setPlanData(weeklyPreview.planData || {});
@@ -62,10 +54,6 @@ export default function Home() {
       console.log('Home load error:', error);
     }
   }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -108,10 +96,7 @@ export default function Home() {
       contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: 32 }}
       showsVerticalScrollIndicator={false}
     >
-      <GreetingSection
-        totalItems={summary.totalItems}
-        recentItem={summary.recentItem}
-      />
+      <GreetingSection />
 
       <TodayOutfitCard outfit={outfit} />
 

@@ -2,15 +2,17 @@ import {
   ScrollView, View, Text, StyleSheet,
   TouchableOpacity,
   Image,
+  Animated,
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { getUserProfile } from "../../src/services/userService";
 import { auth } from "../../src/services/firebaseConfig";
 import ProfileSectionCard from "../../src/components/ProfileSectionCard";
 import ProfileStatCard from "../../src/components/ProfileStatCard";
 import { getUserWardrobeItems } from "../../src/services/cloudWardrobeService";
+import { getProfileStyleSummary } from '../../src/services/profileSummaryService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { ui } from '../../src/theme/ui';
@@ -21,9 +23,13 @@ export default function Profile() {
   const [wardrobeItems, setWardrobeItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [bannerText, setBannerText] = useState('');
+  const [signatureSummary, setSignatureSummary] = useState('');
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const params = useLocalSearchParams();
+  const summaryRequestRef = useRef(0);
+  const bannerOpacity = useRef(new Animated.Value(0)).current;
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Load Profile */
   useFocusEffect(
@@ -56,8 +62,26 @@ export default function Profile() {
       loadProfile();
       if (params.toast === 'profile-saved') {
         setBannerText('✨ Profile updated successfully');
-        const timer = setTimeout(() => setBannerText(''), 1800);
-        return () => clearTimeout(timer);
+        router.setParams({ toast: undefined });
+        bannerOpacity.setValue(0);
+        Animated.timing(bannerOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }).start();
+
+        if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+        bannerTimerRef.current = setTimeout(() => {
+          Animated.timing(bannerOpacity, {
+            toValue: 0,
+            duration: 260,
+            useNativeDriver: true,
+          }).start(() => setBannerText(''));
+        }, 2200);
+
+        return () => {
+          if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+        };
       }
     }, [params.toast])
   );
@@ -92,6 +116,80 @@ export default function Profile() {
     return { total: wardrobeItems.length, breakdown };
   }, [wardrobeItems]);
 
+  const identityHighlights = useMemo(() => {
+    const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
+    const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
+    return {
+      styleTags: stylesList.slice(0, 4),
+      colorTags: colorsList.slice(0, 4),
+    };
+  }, [profile, wardrobeItems]);
+
+  useEffect(() => {
+    const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
+    const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
+    const bodyType = profile?.bodyType || '';
+
+    if (!stylesList.length && !colorsList.length && !bodyType) {
+      setSignatureSummary('Add your style tags, colors, and body type to generate a short style summary.');
+      return;
+    }
+
+    const requestId = ++summaryRequestRef.current;
+    let isActive = true;
+
+    getProfileStyleSummary({
+      styles: stylesList,
+      colors: colorsList,
+      bodyType,
+    }).then((result) => {
+      if (!isActive || requestId !== summaryRequestRef.current) return;
+      setSignatureSummary(result.summary);
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [profile?.styles, profile?.colors, profile?.bodyType]);
+
+  const wardrobeInsights = useMemo(() => {
+    const categories = [
+      { key: 'Shirts', label: 'Shirts' },
+      { key: 'Pants', label: 'Pants' },
+      { key: 'Shoes', label: 'Shoes' },
+      { key: 'Accessories', label: 'Accessories' },
+      { key: 'Jackets', label: 'Jackets' },
+    ];
+    const counts = categories.map(c => stats.breakdown[c.key] || 0);
+    const coveredCounts = counts.filter(c => c > 0);
+    const coveredCount = coveredCounts.length;
+    const coverageRatio = coveredCount / categories.length;
+    const mean = coveredCounts.length ? coveredCounts.reduce((a, b) => a + b, 0) / coveredCounts.length : 0;
+    const variance = coveredCounts.length ? coveredCounts.reduce((acc, v) => acc + ((v - mean) ** 2), 0) / coveredCounts.length : 0;
+    const stdDev = Math.sqrt(variance);
+    const evenness = mean > 0 ? Math.max(0, 1 - (stdDev / (mean + 1))) : 0;
+    const balanceScore = stats.total === 0 ? 0 : Math.round((coverageRatio * 60) + (evenness * 40));
+    const missing = categories.filter(c => (stats.breakdown[c.key] || 0) === 0).map(c => c.label);
+    const dominantCategory = categories
+      .map(category => ({ ...category, count: stats.breakdown[category.key] || 0 }))
+      .sort((a, b) => b.count - a.count)[0];
+    const fitCounts: Record<string, number> = {};
+    wardrobeItems.forEach((item: any) => {
+      const fit = item?.fit;
+      if (fit) fitCounts[fit] = (fitCounts[fit] || 0) + 1;
+    });
+    const dominantFit = Object.entries(fitCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'mixed fit';
+    const wardrobeBrief = stats.total === 0
+      ? 'Add a few pieces to unlock a stronger style brief.'
+      : `${dominantCategory?.label || 'Your wardrobe'} leads the rack, with ${dominantFit.toLowerCase()} energy and ${coverageRatio >= 0.8 ? 'strong' : 'growing'} category balance.`;
+    return {
+      coveredCount,
+      balanceScore,
+      wardrobeBrief,
+      missingText: missing.length ? `Add ${missing.slice(0, 2).join(' + ')} next for better outfit range.` : 'Strong category spread. Keep rotating statement pieces.',
+    };
+  }, [stats, wardrobeItems]);
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.bg }]}
@@ -99,69 +197,100 @@ export default function Profile() {
       showsVerticalScrollIndicator={false}
     >
       {bannerText ? (
-        <View style={[styles.banner, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Animated.View style={[styles.banner, { backgroundColor: theme.card, borderColor: theme.border, opacity: bannerOpacity }]}>
           <Text style={[styles.bannerText, { color: theme.text }]}>{bannerText}</Text>
-        </View>
+        </Animated.View>
       ) : null}
+
+      {/* USERNAME + SETTINGS ROW */}
+      <View style={[styles.usernameRow, { marginBottom: 12 }]}>
+        {profile?.username ? (
+          <Text style={[styles.usernameTopLeft, { color: theme.text }]}>@{profile.username}</Text>
+        ) : (
+          <View style={{ width: 100 }} />
+        )}
+        <TouchableOpacity style={styles.settingsGearTopRight} onPress={() => router.push('/settings')}>
+          <Text style={styles.settingsGearTextTopRight}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* HEADER */}
       <View style={[styles.headerCard, { borderColor: theme.border, backgroundColor: theme.bg2 }]}>
-        {profile?.bannerImageUrl ? (
-          <Image source={{ uri: profile.bannerImageUrl }} style={styles.bannerImage} resizeMode="cover" />
-        ) : (
+        <View style={styles.bannerShell}>
+          {profile?.bannerImageUrl ? (
+            <Image source={{ uri: profile.bannerImageUrl }} style={styles.bannerImage} resizeMode="cover" />
+          ) : (
+            <LinearGradient
+              colors={theme.bg === '#0b0c0f' ? ['#0d1017', '#161a24', '#1d2430'] : ['#ffffff', '#f7f7f4', '#ecece6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.bannerFallback}
+            />
+          )}
+
           <LinearGradient
-            colors={theme.bg === '#0b0c0f' ? ['#0d1017', '#161a24', '#1d2430'] : ['#ffffff', '#f7f7f4', '#ecece6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.bannerFallback}
+            colors={['rgba(8,10,14,0.02)', 'rgba(8,10,14,0.38)', 'rgba(8,10,14,0.72)']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.bannerOverlay}
           />
-        )}
 
-        <TouchableOpacity style={styles.settingsGearBtn} onPress={() => router.push('/settings')}>
-          <Text style={styles.settingsGearText}>⚙️</Text>
-        </TouchableOpacity>
+          <View style={styles.heroContentRow}>
+            <View style={styles.avatar}>
+              {profile?.photoUrl ? (
+                <Image source={{ uri: profile.photoUrl }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {profile?.name?.charAt(0)?.toUpperCase() || '?'}
+                </Text>
+              )}
+            </View>
 
-        <View style={styles.profileMetaArea}>
-          <View style={styles.avatar}>
-            {profile?.photoUrl ? (
-              <Image source={{ uri: profile.photoUrl }} style={styles.avatarImage} resizeMode="cover" />
-            ) : (
-              <Text style={styles.avatarText}>
-                {profile?.name?.charAt(0)?.toUpperCase() || '?'}
-              </Text>
-            )}
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.heroName} numberOfLines={1}>{profile?.name || 'Loading...'}</Text>
+              <Text style={styles.heroEmail} numberOfLines={1}>{profile?.email}</Text>
+            </View>
           </View>
-
-          {profile?.username ? (
-            <Text style={[styles.username, { color: theme.icon }]}>@{profile.username}</Text>
-          ) : null}
-          <Text style={[styles.name, { color: theme.text }]}>{profile?.name || 'Loading...'}</Text>
-          <Text style={[styles.email, { color: theme.icon }]}>{profile?.email}</Text>
-
-          <TouchableOpacity
-            style={[styles.editButton, { backgroundColor: theme.tint }]}
-            onPress={() => router.push('/edit-profile')}
-            activeOpacity={0.86}
-          >
-            <Text style={styles.editText}>Edit Profile</Text>
-          </TouchableOpacity>
         </View>
+
       </View>
+
+      <TouchableOpacity
+        style={[styles.editButton, styles.editButtonStandalone, { backgroundColor: theme.tint }]}
+        onPress={() => router.push('/edit-profile')}
+        activeOpacity={0.86}
+      >
+        <Text style={styles.editText}>Edit Profile</Text>
+      </TouchableOpacity>
 
       {/* STYLE IDENTITY */}
       <ProfileSectionCard title="Style Identity">
-        <Text style={[styles.metaText, { color: theme.text }]}> 
-          Preferred Styles: {profile?.styles?.join(', ') || '—'}
-        </Text>
-        <Text style={[styles.metaText, { color: theme.text }]}> 
-          Colors: {profile?.colors?.join(', ') || '—'}
-        </Text>
-        <Text style={[styles.metaText, { color: theme.text }]}> 
-          Body Type: {profile?.bodyType || '—'}
-        </Text>
-        <Text style={[styles.metaText, { color: theme.text }]}> 
-          Height: {profile?.height ? `${profile.height} cm` : '—'}
-        </Text>
+        <View style={[styles.identityPill, { backgroundColor: theme.bg3, borderColor: theme.border }]}> 
+          <Text style={[styles.identityTitle, { color: theme.text }]}>Signature Vibe</Text>
+          <Text style={[styles.identityBody, { color: theme.text2 }]}>
+            {signatureSummary || 'Not set yet. Choose styles, colors, and body type in Edit Profile.'}
+          </Text>
+        </View>
+
+        <Text style={[styles.metaHeading, { color: theme.text2 }]}>Style Tags</Text>
+        <View style={styles.tagWrap}>
+          {identityHighlights.styleTags.length ? identityHighlights.styleTags.map((tag: string) => (
+            <View key={`style-${tag}`} style={[styles.tagChip, { backgroundColor: theme.bg3, borderColor: theme.border }]}>
+              <Text style={[styles.tagChipText, { color: theme.text }]}>{tag}</Text>
+            </View>
+          )) : <Text style={[styles.metaText, { color: theme.text2 }]}>No style tags yet</Text>}
+        </View>
+
+        <Text style={[styles.metaHeading, { color: theme.text2 }]}>Color Direction</Text>
+        <View style={styles.tagWrap}>
+          {identityHighlights.colorTags.length ? identityHighlights.colorTags.map((tag: string) => (
+            <View key={`color-${tag}`} style={[styles.tagChip, { backgroundColor: theme.bg3, borderColor: theme.border }]}>
+              <Text style={[styles.tagChipText, { color: theme.text }]}>{tag}</Text>
+            </View>
+          )) : <Text style={[styles.metaText, { color: theme.text2 }]}>No color preferences yet</Text>}
+        </View>
+
+        <Text style={[styles.metaText, { color: theme.text2 }]}>Height: {profile?.height ? `${profile.height} cm` : '—'}</Text>
       </ProfileSectionCard>
 
       {/* WARDROBE INSIGHTS */}
@@ -169,13 +298,31 @@ export default function Profile() {
         {loading ? (
           <Text style={[styles.metaText, { color: theme.text }]}>Loading wardrobe...</Text>
         ) : (
-          <View style={styles.statGrid}>
-            <ProfileStatCard value={stats.total} label="Total Items" />
-            <ProfileStatCard value={stats.breakdown.Shirts} label="Shirts" />
-            <ProfileStatCard value={stats.breakdown.Pants} label="Pants" />
-            <ProfileStatCard value={stats.breakdown.Shoes} label="Shoes" />
-            <ProfileStatCard value={stats.breakdown.Accessories} label="Accessories" />
-          </View>
+          <>
+            <View style={[styles.identityPill, { backgroundColor: theme.bg3, borderColor: theme.border }]}> 
+              <Text style={[styles.identityTitle, { color: theme.text }]}>Wardrobe Balance Score: {wardrobeInsights.balanceScore}</Text>
+              <View style={styles.identityBriefRow}>
+                <View style={[styles.identityBriefChip, { backgroundColor: theme.bg2, borderColor: theme.border }]}>
+                  <Text style={[styles.identityBriefChipText, { color: theme.text }]}>Coverage: {wardrobeInsights.coveredCount}/5</Text>
+                </View>
+              </View>
+              <Text style={[styles.identityBody, { color: theme.text2 }]}> 
+                {wardrobeInsights.wardrobeBrief} {wardrobeInsights.missingText}
+              </Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.statRow}
+            >
+              <ProfileStatCard value={stats.total} label="Total Items" />
+              <ProfileStatCard value={stats.breakdown.Shirts} label="Shirts" />
+              <ProfileStatCard value={stats.breakdown.Pants} label="Pants" />
+              <ProfileStatCard value={stats.breakdown.Shoes} label="Shoes" />
+              <ProfileStatCard value={stats.breakdown.Accessories} label="Accessories" />
+            </ScrollView>
+          </>
         )}
       </ProfileSectionCard>
     </ScrollView>
@@ -197,40 +344,54 @@ const styles = StyleSheet.create({
   },
   bannerImage: {
     width: '100%',
-    height: 128,
+    height: '100%',
   },
   bannerFallback: {
     width: '100%',
-    height: 128,
+    height: '100%',
     backgroundColor: '#dbeafe',
   },
-  profileMetaArea: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 18,
-    marginTop: -44,
+  bannerShell: {
+    width: '100%',
+    height: 228,
+    position: 'relative',
   },
-  settingsGearBtn: {
+  bannerOverlay: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 10,
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+  },
+  usernameTopLeft: {
+    fontSize: 20,
+    fontWeight: '800',
+    flex: 1,
+    letterSpacing: -0.4,
+    lineHeight: 24,
+  },
+  settingsGearTopRight: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(12,14,18,0.66)',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  settingsGearText: {
-    fontSize: 16,
+  settingsGearTextTopRight: {
+    fontSize: 18,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
     backgroundColor: '#2b2f36',
-    marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -242,9 +403,38 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   avatarText: {
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: '700',
     color: '#fff',
+  },
+  heroContentRow: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroTextBlock: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  heroUsername: {
+    fontSize: 12,
+    color: '#dbe3f3',
+    marginBottom: 2,
+    fontWeight: '600',
+  },
+  heroName: {
+    fontSize: 22,
+    color: '#ffffff',
+    fontWeight: '800',
+    lineHeight: 26,
+  },
+  heroEmail: {
+    marginTop: 2,
+    color: '#d1d9e6',
+    fontSize: 12,
   },
   username: {
     fontSize: 13,
@@ -262,14 +452,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   editButton: {
-    marginTop: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    marginTop: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: ui.radius.pill,
+    alignSelf: 'center',
+  },
+  editButtonStandalone: {
+    marginBottom: 8,
   },
   editText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   metaText: {
@@ -278,10 +472,48 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     lineHeight: 20,
   },
-  statGrid: {
+  metaHeading: {
+    marginTop: 8,
+    marginBottom: 6,
+    fontSize: 11,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+  },
+  identityPill: {
+    borderRadius: ui.radius.md,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
+  },
+  identityTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  identityBody: {
+    fontSize: 13,
+    lineHeight: 21,
+  },
+  tagWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
+  },
+  tagChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: ui.radius.pill,
+    borderWidth: 1,
+  },
+  tagChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statRow: {
+    paddingRight: 6,
+    gap: 8,
   },
   banner: {
     marginBottom: 12,

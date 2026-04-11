@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   FlatList,
+  Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getUserWardrobeItems } from '../../src/services/cloudWardrobeService';
@@ -29,12 +30,15 @@ const CATEGORY_MAP = {
 
 export default function Wardrobe() {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [allItems, setAllItems] = useState([]);
   const [showAssistant, setShowAssistant] = useState(false);
   const [bannerText, setBannerText] = useState('');
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const params = useLocalSearchParams();
+  const bannerOpacity = useRef(new Animated.Value(0)).current;
+  const bannerTimerRef = useRef(null);
 
 
   const loadData = useCallback(async () => {
@@ -46,29 +50,65 @@ export default function Wardrobe() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   useFocusEffect(
     useCallback(() => {
       loadData();
       if (params.toast === 'item-added') {
         setBannerText('✨ Item added to your wardrobe');
-        const timer = setTimeout(() => setBannerText(''), 1800);
-        return () => clearTimeout(timer);
+        bannerOpacity.setValue(0);
+        Animated.timing(bannerOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }).start();
+
+        if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+        bannerTimerRef.current = setTimeout(() => {
+          Animated.timing(bannerOpacity, {
+            toValue: 0,
+            duration: 260,
+            useNativeDriver: true,
+          }).start(() => setBannerText(''));
+        }, 2200);
+
+        return () => {
+          if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+        };
       }
     }, [loadData, params.toast])
   );
 
   // Filter items based on selected category
-  const filteredItems = selectedCategory === 'All'
-    ? allItems
-    : allItems.filter(item => {
-        const cat = (item.category || item.name || '').toLowerCase();
-        const matchers = CATEGORY_MAP[selectedCategory] || [selectedCategory.toLowerCase()];
-        return matchers.some(term => cat.includes(term));
-      });
+  const filteredItems = useMemo(() => {
+    const base = selectedCategory === 'All'
+      ? allItems
+      : allItems.filter(item => {
+          const cat = (item.category || item.name || '').toLowerCase();
+          const matchers = CATEGORY_MAP[selectedCategory] || [selectedCategory.toLowerCase()];
+          return matchers.some(term => cat.includes(term));
+        });
+
+    const toTime = (item) => {
+      const raw = item?.createdAt || item?.updatedAt || item?.addedAt || item?.timestamp;
+      if (!raw) return 0;
+      if (typeof raw === 'number') return raw;
+      if (typeof raw === 'string') {
+        const t = Date.parse(raw);
+        return Number.isNaN(t) ? 0 : t;
+      }
+      if (raw?.seconds) return raw.seconds * 1000;
+      if (raw?.toDate) {
+        const d = raw.toDate();
+        return d?.getTime?.() || 0;
+      }
+      return 0;
+    };
+
+    return [...base].sort((a, b) => {
+      const diff = toTime(a) - toTime(b);
+      return sortDirection === 'desc' ? -diff : diff;
+    });
+  }, [allItems, selectedCategory, sortDirection]);
 
   const keyExtractor = useCallback((item) => item.id, []);
   const renderItem = useCallback(({ item }) => (
@@ -78,13 +118,23 @@ export default function Wardrobe() {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg, paddingTop: insets.top}]}>
       {bannerText ? (
-        <View style={[styles.banner, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Animated.View style={[styles.banner, { backgroundColor: theme.card, borderColor: theme.border, opacity: bannerOpacity }]}>
           <Text style={[styles.bannerText, { color: theme.text }]}>{bannerText}</Text>
-        </View>
+        </Animated.View>
       ) : null}
 
-      <Text style={[styles.title, { color: theme.text }]}>My Wardrobe</Text>
-      <Text style={[styles.subtitle, { color: theme.text2 }]}>{allItems.length} items</Text>
+      <View style={styles.topRow}>
+        <View>
+          <Text style={[styles.title, { color: theme.text }]}>My Wardrobe</Text>
+          <Text style={[styles.subtitle, { color: theme.text2 }]}>{allItems.length} items</Text>
+        </View>
+        <Pressable
+          onPress={() => setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc')}
+          style={({ pressed }) => [styles.sortIconBtn, { borderColor: theme.border, backgroundColor: theme.bg2, opacity: pressed ? 0.85 : 1 }]}
+        >
+          <Text style={[styles.sortIcon, { color: theme.text }]}>{sortDirection === 'desc' ? '↓' : '↑'}</Text>
+        </Pressable>
+      </View>
 
       {/* Generate Outfit Button */}
       <Pressable
@@ -165,8 +215,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: ui.type.title,
     fontWeight: '800',
-    marginTop: 16,
+    marginTop: 10,
     letterSpacing: -0.4,
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sortIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  sortIcon: {
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 20,
   },
   subtitle: {
     fontSize: 14,
