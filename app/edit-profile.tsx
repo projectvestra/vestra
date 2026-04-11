@@ -32,6 +32,7 @@ export default function EditProfile() {
   // Basic info
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
+  const [pronouns, setPronouns] = useState('');
   const [originalUsername, setOriginalUsername] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [bannerImageUrl, setBannerImageUrl] = useState('');
@@ -48,6 +49,7 @@ export default function EditProfile() {
   const buildSnapshot = (overrides?: {
     displayName?: string;
     username?: string;
+    pronouns?: string;
     height?: string;
     bodyType?: string;
     selectedStyles?: string[];
@@ -58,6 +60,7 @@ export default function EditProfile() {
     const snapshot = {
       displayName: (overrides?.displayName ?? displayName).trim(),
       username: (overrides?.username ?? username).trim().toLowerCase(),
+      pronouns: (overrides?.pronouns ?? pronouns).trim(),
       height: (overrides?.height ?? height).trim(),
       bodyType: (overrides?.bodyType ?? bodyType).trim(),
       selectedStyles: normalizeArray(overrides?.selectedStyles ?? selectedStyles),
@@ -71,7 +74,7 @@ export default function EditProfile() {
   const hasUnsavedChanges = useMemo(() => {
     if (!initialSnapshotRef.current) return false;
     return buildSnapshot() !== initialSnapshotRef.current;
-  }, [displayName, username, height, bodyType, selectedStyles, selectedColors, photoUrl, bannerImageUrl]);
+  }, [displayName, username, pronouns, height, bodyType, selectedStyles, selectedColors, photoUrl, bannerImageUrl]);
   const isBusy = saving || uploadingPhoto || uploadingBanner;
 
   useEffect(() => {
@@ -93,6 +96,7 @@ export default function EditProfile() {
       if (snap.exists()) {
         const data = snap.data();
         const initialUsername = data.username || '';
+        const initialPronouns = data.pronouns || '';
         const initialHeight = data.height?.toString() || '';
         const initialBodyType = data.bodyType || '';
         const initialStyles = data.styles || [];
@@ -101,6 +105,7 @@ export default function EditProfile() {
         const initialBannerImageUrl = data.bannerImageUrl || '';
 
         setUsername(initialUsername);
+        setPronouns(initialPronouns);
         setOriginalUsername(initialUsername);
         setHeight(initialHeight);
         setBodyType(initialBodyType);
@@ -112,6 +117,7 @@ export default function EditProfile() {
         initialSnapshotRef.current = buildSnapshot({
           displayName: initialDisplayName,
           username: initialUsername,
+          pronouns: initialPronouns,
           height: initialHeight,
           bodyType: initialBodyType,
           selectedStyles: initialStyles,
@@ -121,6 +127,7 @@ export default function EditProfile() {
         });
       } else {
         setUsername('');
+        setPronouns('');
         setOriginalUsername('');
         setHeight('');
         setBodyType('');
@@ -131,6 +138,7 @@ export default function EditProfile() {
         initialSnapshotRef.current = buildSnapshot({
           displayName: initialDisplayName,
           username: '',
+          pronouns: '',
           height: '',
           bodyType: '',
           selectedStyles: [],
@@ -191,6 +199,7 @@ export default function EditProfile() {
       // Save everything to Firestore
       await setDoc(doc(db, 'user_profiles', user.uid), {
         username: trimmedUsername,
+        pronouns: pronouns.trim(),
         displayName: trimmedDisplayName,
         photoUrl,
         bannerImageUrl,
@@ -204,6 +213,7 @@ export default function EditProfile() {
       initialSnapshotRef.current = buildSnapshot({
         displayName: trimmedDisplayName,
         username: trimmedUsername,
+        pronouns,
         height,
         bodyType,
         selectedStyles,
@@ -364,6 +374,15 @@ export default function EditProfile() {
         placeholder="@username"
         placeholderTextColor="#999"
         autoCapitalize="none"
+      />
+
+      <Text style={[styles.label, { color: theme.text2 }]}>Pronouns</Text>
+      <TextInput
+        style={[styles.input, { backgroundColor: theme.bg2, borderColor: theme.border, color: theme.text }]}
+        value={pronouns}
+        onChangeText={setPronouns}
+        placeholder="e.g. he/him, she/her, they/them"
+        placeholderTextColor="#999"
       />
 
       <Text style={[styles.label, { color: theme.text2 }]}>Height (cm)</Text>

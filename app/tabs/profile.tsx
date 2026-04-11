@@ -51,6 +51,7 @@ export default function Profile() {
               ? user.displayName
               : user?.email?.split('@')[0] || 'User',
             email: user?.email || '',
+            pronouns: preferences?.pronouns || '',
             height: preferences?.height || '',
             bodyType: preferences?.bodyType || '',
             styles: preferences?.styles || [],
@@ -130,26 +131,28 @@ export default function Profile() {
     const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
     const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
     const bodyType = profile?.bodyType || '';
+    const pronouns = profile?.pronouns?.trim() || 'They';
 
     if (!stylesList.length && !colorsList.length && !bodyType) {
       return 'Add your style tags, colors, and body type to generate a short style summary.';
     }
 
-    return [
-      `Style: ${stylesList.slice(0, 2).join(', ') || 'clean style'}.`,
-      `Fit: ${bodyType || 'balanced fit'}.`,
-      `Colors: ${colorsList.slice(0, 2).join(', ') || 'neutral colors'}.`,
-    ].join(' ');
-  }, [profile?.styles, profile?.colors, profile?.bodyType]);
+    const styleText = stylesList.slice(0, 2).join(', ') || 'clean silhouettes';
+    const colorText = colorsList.slice(0, 2).join(', ') || 'balanced neutrals';
+    const fitText = bodyType || 'balanced';
+    return `${pronouns} lean toward ${styleText} with a ${fitText.toLowerCase()} shape profile, and usually prefer ${colorText.toLowerCase()} for a cohesive look.`;
+  }, [profile?.styles, profile?.colors, profile?.bodyType, profile?.pronouns]);
 
   useEffect(() => {
     const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
     const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
     const bodyType = profile?.bodyType || '';
+    const pronouns = profile?.pronouns || '';
     const summaryKey = JSON.stringify({
       styles: stylesList,
       colors: colorsList,
       bodyType,
+      pronouns,
     });
 
     if (summaryKey === lastSummaryKeyRef.current && aiSignatureSummary.trim()) {
@@ -171,6 +174,7 @@ export default function Profile() {
       styles: stylesList,
       colors: colorsList,
       bodyType,
+      pronouns,
     }).then((result) => {
       if (!isActive || requestId !== summaryRequestRef.current) return;
       const next = (result?.summary || '').trim();
@@ -180,7 +184,7 @@ export default function Profile() {
     return () => {
       isActive = false;
     };
-  }, [profile?.styles, profile?.colors, profile?.bodyType, aiSignatureSummary]);
+  }, [profile?.styles, profile?.colors, profile?.bodyType, profile?.pronouns, aiSignatureSummary]);
 
   const wardrobeInsights = useMemo(() => {
     const categories = [
@@ -277,6 +281,9 @@ export default function Profile() {
             </View>
 
             <View style={styles.heroTextBlock}>
+              {profile?.pronouns ? (
+                <Text style={styles.heroPronouns} numberOfLines={1}>{profile.pronouns}</Text>
+              ) : null}
               <Text style={styles.heroName} numberOfLines={1}>{profile?.name || 'Loading...'}</Text>
               <Text style={styles.heroEmail} numberOfLines={1}>{profile?.email}</Text>
             </View>
@@ -318,6 +325,15 @@ export default function Profile() {
               <Text style={[styles.tagChipText, { color: theme.text }]}>{tag}</Text>
             </View>
           )) : <Text style={[styles.metaText, { color: theme.text2 }]}>No color preferences yet</Text>}
+        </View>
+
+        <Text style={[styles.metaHeading, { color: theme.text2 }]}>Body Type</Text>
+        <View style={styles.tagWrap}>
+          {profile?.bodyType ? (
+            <View style={[styles.tagChip, { backgroundColor: theme.bg3, borderColor: theme.border }]}>
+              <Text style={[styles.tagChipText, { color: theme.text }]}>{profile.bodyType}</Text>
+            </View>
+          ) : <Text style={[styles.metaText, { color: theme.text2 }]}>No body type selected yet</Text>}
         </View>
 
         <Text style={[styles.metaText, { color: theme.text2 }]}>Height: {profile?.height ? `${profile.height} cm` : '—'}</Text>
@@ -455,6 +471,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '800',
     lineHeight: 26,
+  },
+  heroPronouns: {
+    fontSize: 11,
+    color: '#dbe3f3',
+    fontWeight: '600',
+    marginBottom: 2,
   },
   heroEmail: {
     marginTop: 2,
