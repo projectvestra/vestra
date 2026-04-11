@@ -36,17 +36,18 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
   }
 }
 
-function buildFallbackSummary(styles = [], colors = [], bodyType = '') {
+function buildFallbackSummary(styles = [], colors = [], bodyType = '', pronouns = '') {
   const styleText = Array.isArray(styles) && styles.length ? styles.slice(0, 3).join(', ') : 'clean style';
   const colorText = Array.isArray(colors) && colors.length ? colors.slice(0, 3).join(', ') : 'neutral colors';
   const fitText = bodyType || 'balanced fit';
-  return `Style: ${styleText}. Fit: ${fitText}. Colors: ${colorText}.`;
+  const pronounText = (pronouns || 'They').trim();
+  return `${pronounText} prefer ${styleText.toLowerCase()} looks, with a ${fitText.toLowerCase()} shape profile and ${colorText.toLowerCase()} choices that keep outfits cohesive.`;
 }
 
-export async function getProfileStyleSummary({ styles = [], colors = [], bodyType = '' } = {}) {
+export async function getProfileStyleSummary({ styles = [], colors = [], bodyType = '', pronouns = '' } = {}) {
   if (!API_BASE) {
     return {
-      summary: buildFallbackSummary(styles, colors, bodyType),
+      summary: buildFallbackSummary(styles, colors, bodyType, pronouns),
       source: 'local-fallback',
     };
   }
@@ -55,16 +56,16 @@ export async function getProfileStyleSummary({ styles = [], colors = [], bodyTyp
     const data = await fetchJsonWithTimeout(`${API_BASE}/profile-summary`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ styles, colors, bodyType }),
+      body: JSON.stringify({ styles, colors, bodyType, pronouns }),
     }, 9000);
 
     return {
-      summary: data?.summary || buildFallbackSummary(styles, colors, bodyType),
+      summary: data?.summary || buildFallbackSummary(styles, colors, bodyType, pronouns),
       source: data?.source || 'ai',
     };
   } catch (error) {
     return {
-      summary: buildFallbackSummary(styles, colors, bodyType),
+      summary: buildFallbackSummary(styles, colors, bodyType, pronouns),
       source: 'local-fallback',
       error: error?.message || 'Failed to load profile summary',
     };

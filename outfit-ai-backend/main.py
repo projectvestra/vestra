@@ -404,6 +404,7 @@ async def profile_summary(request: Request):
     styles = payload.get("styles") or []
     colors = payload.get("colors") or []
     body_type = payload.get("bodyType") or ""
+    pronouns = payload.get("pronouns") or ""
 
     if not isinstance(styles, list):
         styles = [styles]
@@ -413,6 +414,7 @@ async def profile_summary(request: Request):
     style_text = ", ".join([str(style) for style in styles[:3] if str(style).strip()]) or "clean style"
     color_text = ", ".join([str(color) for color in colors[:3] if str(color).strip()]) or "neutral colors"
     fit_text = str(body_type).strip() or "balanced fit"
+    pronouns_text = str(pronouns).strip() or "they/them"
 
     try:
         summary = _call_gemini(
@@ -420,17 +422,18 @@ async def profile_summary(request: Request):
 Style tags: {style_text}
 Body type: {fit_text}
 Color choices: {color_text}
+Pronouns: {pronouns_text}
 
 Write a short profile summary in 1-2 sentences, max 24 words total.
 """,
-            system_instruction="You write very short fashion profile summaries. Return one concise summary of 1-2 short sentences, no bullets, no labels, no extra commentary.",
+            system_instruction="You write very short fashion profile summaries. Mention pronouns naturally once and describe style, body shape, and color preference in 1-2 short sentences, no labels.",
             max_output_tokens=80,
             temperature=0.2,
         )
         summary = re.sub(r"\s+", " ", summary)
         return {"summary": summary, "source": "ai", "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")}
     except Exception as e:
-        summary = f"Style: {style_text}. Fit: {fit_text}. Colors: {color_text}."
+        summary = f"{pronouns_text} prefer {style_text.lower()} looks, with a {fit_text.lower()} shape profile and {color_text.lower()} color choices."
         return {"summary": summary, "source": "local-fallback", "error": str(e)}
 
 def _cat(item):
