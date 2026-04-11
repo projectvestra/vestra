@@ -30,14 +30,13 @@ export default function Profile() {
   const summaryRequestRef = useRef(0);
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSummaryKeyRef = useRef('');
 
   /* Load Profile */
   useFocusEffect(
     useCallback(() => {
       const loadProfile = async () => {
         try {
-          // Force reload auth to get latest displayName
-          await auth.currentUser?.reload();
           const user = auth.currentUser;
           const preferences = await getUserProfile();
 
@@ -129,11 +128,29 @@ export default function Profile() {
     const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
     const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
     const bodyType = profile?.bodyType || '';
+    const summaryKey = JSON.stringify({
+      styles: stylesList,
+      colors: colorsList,
+      bodyType,
+    });
+
+    if (summaryKey === lastSummaryKeyRef.current) {
+      return;
+    }
+    lastSummaryKeyRef.current = summaryKey;
 
     if (!stylesList.length && !colorsList.length && !bodyType) {
       setSignatureSummary('Add your style tags, colors, and body type to generate a short style summary.');
       return;
     }
+
+    const localSummary = [
+      `Style: ${stylesList.slice(0, 2).join(', ') || 'clean style'}.`,
+      `Fit: ${bodyType || 'balanced fit'}.`,
+      `Colors: ${colorsList.slice(0, 2).join(', ') || 'neutral colors'}.`,
+    ].join(' ');
+
+    setSignatureSummary(localSummary);
 
     const requestId = ++summaryRequestRef.current;
     let isActive = true;
@@ -301,11 +318,6 @@ export default function Profile() {
           <>
             <View style={[styles.identityPill, { backgroundColor: theme.bg3, borderColor: theme.border }]}> 
               <Text style={[styles.identityTitle, { color: theme.text }]}>Wardrobe Balance Score: {wardrobeInsights.balanceScore}</Text>
-              <View style={styles.identityBriefRow}>
-                <View style={[styles.identityBriefChip, { backgroundColor: theme.bg2, borderColor: theme.border }]}>
-                  <Text style={[styles.identityBriefChipText, { color: theme.text }]}>Coverage: {wardrobeInsights.coveredCount}/5</Text>
-                </View>
-              </View>
               <Text style={[styles.identityBody, { color: theme.text2 }]}> 
                 {wardrobeInsights.wardrobeBrief} {wardrobeInsights.missingText}
               </Text>

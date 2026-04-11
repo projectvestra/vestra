@@ -29,7 +29,7 @@ function defaultDisplayNameFromEmail(email: string) {
 
 export default function CompleteProfile() {
   const router = useRouter();
-  const theme = useTheme();
+  const { theme } = useTheme();
   const user = auth.currentUser;
 
   const [username, setUsername] = useState('');
@@ -70,7 +70,7 @@ export default function CompleteProfile() {
       if (profileSnap.exists()) {
         const profile = profileSnap.data() || {};
         if (profile.username) {
-          router.replace('/(tabs)/home');
+          router.replace('/tabs/home');
           return;
         }
 
@@ -265,7 +265,7 @@ export default function CompleteProfile() {
           padding: 24,
           backgroundColor: theme.bg2,
           borderRadius: 12,
-          shadowColor: theme.shadow,
+          shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
@@ -280,7 +280,7 @@ export default function CompleteProfile() {
         subtitle: {
           fontSize: 14,
           marginBottom: 20,
-          color: theme.textSecondary,
+          color: theme.text2,
           lineHeight: 20,
         },
         label: {
@@ -291,7 +291,7 @@ export default function CompleteProfile() {
         },
         optionalLabel: {
           fontSize: 12,
-          color: theme.textSecondary,
+          color: theme.text2,
           fontWeight: '500',
           marginLeft: 4,
         },
@@ -343,7 +343,7 @@ export default function CompleteProfile() {
         },
         helper: {
           fontSize: 12,
-          color: theme.textSecondary,
+          color: theme.text2,
           marginBottom: 12,
           lineHeight: 16,
         },
@@ -357,7 +357,7 @@ export default function CompleteProfile() {
         },
         staticLabel: {
           fontSize: 12,
-          color: theme.textSecondary,
+          color: theme.text2,
           marginBottom: 4,
         },
         staticValue: {
@@ -367,7 +367,7 @@ export default function CompleteProfile() {
         },
         stepCounter: {
           fontSize: 12,
-          color: theme.textSecondary,
+          color: theme.text2,
           marginBottom: 16,
           fontWeight: '500',
         },
@@ -398,7 +398,7 @@ export default function CompleteProfile() {
             <Text style={styles.label}>Display Name</Text>
             <TextInput
               placeholder="Enter your display name"
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={theme.text2}
               value={displayName}
               onChangeText={setDisplayName}
               editable={!loading}
@@ -433,7 +433,7 @@ export default function CompleteProfile() {
             <Text style={styles.label}>Username</Text>
             <TextInput
               placeholder="Enter username"
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={theme.text2}
               value={username}
               onChangeText={handleUsernameChange}
               autoCapitalize="none"
@@ -489,7 +489,7 @@ export default function CompleteProfile() {
             </View>
             <TextInput
               placeholder="Enter password (optional)"
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={theme.text2}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -503,7 +503,7 @@ export default function CompleteProfile() {
               <Text style={styles.label}>Confirm Password</Text>
               <TextInput
                 placeholder="Confirm password"
-                placeholderTextColor={theme.textSecondary}
+                placeholderTextColor={theme.text2}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
