@@ -120,7 +120,8 @@ def _fetch_remote_marketplace_products() -> list[dict]:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")}
+    model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    return {"status": "ok", "model": model.replace("models/", "")}
 
 @app.get("/marketplace/products")
 def get_marketplace_products(
@@ -174,12 +175,19 @@ def _get_gemini_api_key() -> str:
     return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
 
 
+def _normalize_gemini_model(model: str) -> str:
+    raw = (model or "").strip()
+    if not raw:
+        return "gemini-2.0-flash"
+    return raw.replace("models/", "")
+
+
 def _call_gemini(prompt: str, system_instruction: str = "", max_output_tokens: int = 1024, temperature: float = 0.3) -> str:
     api_key = _get_gemini_api_key()
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY missing")
 
-    model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    model = _normalize_gemini_model(os.getenv("GEMINI_MODEL", "gemini-2.0-flash"))
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     payload = {
@@ -431,7 +439,7 @@ Write a short profile summary in 1-2 sentences, max 24 words total.
             temperature=0.2,
         )
         summary = re.sub(r"\s+", " ", summary)
-        return {"summary": summary, "source": "ai", "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")}
+        return {"summary": summary, "source": "ai", "model": _normalize_gemini_model(os.getenv("GEMINI_MODEL", "gemini-2.0-flash"))}
     except Exception as e:
         summary = f"{pronouns_text} prefer {style_text.lower()} looks, with a {fit_text.lower()} shape profile and {color_text.lower()} color choices."
         return {"summary": summary, "source": "local-fallback", "error": str(e)}
