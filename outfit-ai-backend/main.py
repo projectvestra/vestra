@@ -1,6 +1,6 @@
 import os, json, uuid
 from urllib.parse import quote
-from urllib.request import urlopen
+from urllib.request import Request as UrlRequest, urlopen
 from fastapi import FastAPI, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -120,7 +120,7 @@ def _fetch_remote_marketplace_products() -> list[dict]:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "claude-sonnet-4-6"}
+    return {"status": "ok", "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")}
 
 @app.get("/marketplace/products")
 def get_marketplace_products(
@@ -168,6 +168,51 @@ def extract_json(text):
         except json.JSONDecodeError:
             pass
     return None
+
+
+def _get_gemini_api_key() -> str:
+    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+
+
+def _call_gemini(prompt: str, system_instruction: str = "", max_output_tokens: int = 1024, temperature: float = 0.3) -> str:
+    api_key = _get_gemini_api_key()
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY missing")
+
+    model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+
+    payload = {
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_output_tokens,
+        },
+    }
+
+    if system_instruction:
+        payload["system_instruction"] = {"parts": [{"text": system_instruction}]}
+
+    req = UrlRequest(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urlopen(req, timeout=25) as response:
+        raw = response.read().decode("utf-8")
+        parsed = json.loads(raw)
+
+    candidates = parsed.get("candidates") or []
+    if not candidates:
+        raise RuntimeError(f"Gemini returned no candidates: {parsed}")
+
+    parts = candidates[0].get("content", {}).get("parts", [])
+    text = "".join([part.get("text", "") for part in parts if isinstance(part, dict)]).strip()
+    if not text:
+        raise RuntimeError(f"Gemini returned empty text: {parsed}")
+    return text
 
 
 def _fallback_score(top: dict, bottom: dict, shoes: dict, occasion: str = "casual") -> dict:
@@ -250,19 +295,8 @@ async def recommend(
     ])
 
     try:
-        from anthropic import Anthropic
-
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY missing")
-
-        client = Anthropic(api_key=api_key)
-
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1500,
-            system="You are a professional fashion stylist. Generate outfit recommendations using ONLY items from the wardrobe. Return valid JSON only.",
-            messages=[{"role": "user", "content": f"""
+        raw = _call_gemini(
+            prompt=f"""
 WARDROBE:
 {wardrobe_text}
 
@@ -271,10 +305,12 @@ CONTEXT: occasion={occasion}, temperature={temperature_c}C
 Generate 10 outfit combinations ranked by style score.
 Return JSON array:
 [{{"top": {{"id":"..."}}, "bottom": {{"id":"..."}}, "shoes": {{"id":"..."}}, "score": {{"total": 8.5, "color": 8.0, "coherence": 9.0, "occasion": 8.5}}}}]
-Only the JSON array, nothing else."""}]
+Only the JSON array, nothing else.
+""",
+            system_instruction="You are a professional fashion stylist. Generate outfit recommendations using ONLY items from the wardrobe. Return valid JSON only.",
+            max_output_tokens=1500,
+            temperature=0.2,
         )
-
-        raw = response.content[0].text.strip()
         outfits_raw = extract_json(raw)
         if not outfits_raw or not isinstance(outfits_raw, list):
             raise RuntimeError("Invalid AI JSON response")
@@ -314,19 +350,8 @@ async def weekly_plan(
     occasions_text = "\n".join([f"{day}: {occ}" for day, occ in occasions.items()])
 
     try:
-        from anthropic import Anthropic
-
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY missing")
-
-        client = Anthropic(api_key=api_key)
-
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2000,
-            system="You are a professional fashion stylist. Create a 7-day outfit plan with NO REPEATED combinations. Each day must have a DIFFERENT outfit. Match formality to occasion. Return valid JSON only.",
-            messages=[{"role": "user", "content": f"""
+        raw = _call_gemini(
+            prompt=f"""
 WARDROBE ITEMS:
 {wardrobe_text}
 
@@ -344,10 +369,12 @@ Return JSON:
   "Saturday":  {{"top_id": "...", "bottom_id": "...", "shoes_id": "...", "score": {{"total": 8.0, "color": 8.5, "coherence": 7.5, "occasion": 8.0}}}},
   "Sunday":    {{"top_id": "...", "bottom_id": "...", "shoes_id": "...", "score": {{"total": 7.2, "color": 7.0, "coherence": 7.5, "occasion": 7.0}}}}
 }}
-Only the JSON object."""}]
+Only the JSON object.
+""",
+                        system_instruction="You are a professional fashion stylist. Create a 7-day outfit plan with NO REPEATED combinations. Each day must have a DIFFERENT outfit. Match formality to occasion. Return valid JSON only.",
+                        max_output_tokens=2000,
+                        temperature=0.2,
         )
-
-        raw = response.content[0].text.strip()
         plan_data = extract_json(raw)
         if not plan_data or not isinstance(plan_data, dict):
             raise RuntimeError("Invalid AI JSON response")
@@ -364,7 +391,7 @@ Only the JSON object."""}]
                     "score":  combo.get('score', {"total":7,"color":7,"coherence":7,"occasion":7}),
                 }
         if result:
-            return {"plan": result, "source": "ai", "model": "claude-sonnet-4-6"}
+            return {"plan": result, "source": "ai", "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")}
         raise RuntimeError("AI returned no valid weekly plan")
     except Exception as e:
         fallback = _fallback_weekly_plan(wardrobe, occasions)
@@ -388,29 +415,20 @@ async def profile_summary(request: Request):
     fit_text = str(body_type).strip() or "balanced fit"
 
     try:
-        from anthropic import Anthropic
-
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY missing")
-
-        client = Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=80,
-            system="You write very short fashion profile summaries. Return one concise summary of 1-2 short sentences, no bullets, no labels, no extra commentary.",
-            messages=[{"role": "user", "content": f"""
+        summary = _call_gemini(
+            prompt=f"""
 Style tags: {style_text}
 Body type: {fit_text}
 Color choices: {color_text}
 
 Write a short profile summary in 1-2 sentences, max 24 words total.
-"""}]
+""",
+            system_instruction="You write very short fashion profile summaries. Return one concise summary of 1-2 short sentences, no bullets, no labels, no extra commentary.",
+            max_output_tokens=80,
+            temperature=0.2,
         )
-
-        summary = response.content[0].text.strip()
         summary = re.sub(r"\s+", " ", summary)
-        return {"summary": summary, "source": "ai", "model": "claude-sonnet-4-6"}
+        return {"summary": summary, "source": "ai", "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")}
     except Exception as e:
         summary = f"Style: {style_text}. Fit: {fit_text}. Colors: {color_text}."
         return {"summary": summary, "source": "local-fallback", "error": str(e)}

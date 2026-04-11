@@ -23,7 +23,7 @@ export default function Profile() {
   const [wardrobeItems, setWardrobeItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [bannerText, setBannerText] = useState('');
-  const [signatureSummary, setSignatureSummary] = useState('');
+  const [aiSignatureSummary, setAiSignatureSummary] = useState('');
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const params = useLocalSearchParams();
@@ -31,6 +31,12 @@ export default function Profile() {
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSummaryKeyRef = useRef('');
+
+  useEffect(() => {
+    return () => {
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    };
+  }, []);
 
   /* Load Profile */
   useFocusEffect(
@@ -77,10 +83,6 @@ export default function Profile() {
             useNativeDriver: true,
           }).start(() => setBannerText(''));
         }, 2200);
-
-        return () => {
-          if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
-        };
       }
     }, [params.toast])
   );
@@ -124,6 +126,22 @@ export default function Profile() {
     };
   }, [profile, wardrobeItems]);
 
+  const localSignatureSummary = useMemo(() => {
+    const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
+    const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
+    const bodyType = profile?.bodyType || '';
+
+    if (!stylesList.length && !colorsList.length && !bodyType) {
+      return 'Add your style tags, colors, and body type to generate a short style summary.';
+    }
+
+    return [
+      `Style: ${stylesList.slice(0, 2).join(', ') || 'clean style'}.`,
+      `Fit: ${bodyType || 'balanced fit'}.`,
+      `Colors: ${colorsList.slice(0, 2).join(', ') || 'neutral colors'}.`,
+    ].join(' ');
+  }, [profile?.styles, profile?.colors, profile?.bodyType]);
+
   useEffect(() => {
     const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
     const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
@@ -134,23 +152,17 @@ export default function Profile() {
       bodyType,
     });
 
-    if (summaryKey === lastSummaryKeyRef.current) {
+    if (summaryKey === lastSummaryKeyRef.current && aiSignatureSummary.trim()) {
       return;
     }
     lastSummaryKeyRef.current = summaryKey;
 
     if (!stylesList.length && !colorsList.length && !bodyType) {
-      setSignatureSummary('Add your style tags, colors, and body type to generate a short style summary.');
+      setAiSignatureSummary('');
       return;
     }
 
-    const localSummary = [
-      `Style: ${stylesList.slice(0, 2).join(', ') || 'clean style'}.`,
-      `Fit: ${bodyType || 'balanced fit'}.`,
-      `Colors: ${colorsList.slice(0, 2).join(', ') || 'neutral colors'}.`,
-    ].join(' ');
-
-    setSignatureSummary(localSummary);
+    setAiSignatureSummary('');
 
     const requestId = ++summaryRequestRef.current;
     let isActive = true;
@@ -161,13 +173,14 @@ export default function Profile() {
       bodyType,
     }).then((result) => {
       if (!isActive || requestId !== summaryRequestRef.current) return;
-      setSignatureSummary(result.summary);
+      const next = (result?.summary || '').trim();
+      setAiSignatureSummary(next);
     });
 
     return () => {
       isActive = false;
     };
-  }, [profile?.styles, profile?.colors, profile?.bodyType]);
+  }, [profile?.styles, profile?.colors, profile?.bodyType, aiSignatureSummary]);
 
   const wardrobeInsights = useMemo(() => {
     const categories = [
@@ -285,7 +298,7 @@ export default function Profile() {
         <View style={[styles.identityPill, { backgroundColor: theme.bg3, borderColor: theme.border }]}> 
           <Text style={[styles.identityTitle, { color: theme.text }]}>Signature Vibe</Text>
           <Text style={[styles.identityBody, { color: theme.text2 }]}>
-            {signatureSummary || 'Not set yet. Choose styles, colors, and body type in Edit Profile.'}
+            {aiSignatureSummary || localSignatureSummary}
           </Text>
         </View>
 
