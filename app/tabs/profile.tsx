@@ -131,7 +131,6 @@ export default function Profile() {
     const stylesList = Array.isArray(profile?.styles) ? profile.styles : [];
     const colorsList = Array.isArray(profile?.colors) ? profile.colors : [];
     const bodyType = profile?.bodyType || '';
-    const pronouns = profile?.pronouns?.trim() || 'They';
 
     if (!stylesList.length && !colorsList.length && !bodyType) {
       return 'Add your style tags, colors, and body type to generate a short style summary.';
@@ -140,7 +139,7 @@ export default function Profile() {
     const styleText = stylesList.slice(0, 2).join(', ') || 'clean silhouettes';
     const colorText = colorsList.slice(0, 2).join(', ') || 'balanced neutrals';
     const fitText = bodyType || 'balanced';
-    return `${pronouns} lean toward ${styleText} with a ${fitText.toLowerCase()} shape profile, and usually prefer ${colorText.toLowerCase()} for a cohesive look.`;
+    return `Prefers ${styleText.toLowerCase()} with a ${fitText.toLowerCase()} shape profile, and leans toward ${colorText.toLowerCase()} for a cohesive wardrobe.`;
   }, [profile?.styles, profile?.colors, profile?.bodyType, profile?.pronouns]);
 
   useEffect(() => {

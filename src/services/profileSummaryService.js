@@ -40,8 +40,7 @@ function buildFallbackSummary(styles = [], colors = [], bodyType = '', pronouns 
   const styleText = Array.isArray(styles) && styles.length ? styles.slice(0, 3).join(', ') : 'clean style';
   const colorText = Array.isArray(colors) && colors.length ? colors.slice(0, 3).join(', ') : 'neutral colors';
   const fitText = bodyType || 'balanced fit';
-  const pronounText = (pronouns || 'They').trim();
-  return `${pronounText} prefer ${styleText.toLowerCase()} looks, with a ${fitText.toLowerCase()} shape profile and ${colorText.toLowerCase()} choices that keep outfits cohesive.`;
+  return `Prefers ${styleText.toLowerCase()} looks, with a ${fitText.toLowerCase()} shape profile and ${colorText.toLowerCase()} choices that keep outfits cohesive.`;
 }
 
 export async function getProfileStyleSummary({ styles = [], colors = [], bodyType = '', pronouns = '' } = {}) {

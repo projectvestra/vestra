@@ -19,6 +19,7 @@ import { ui } from '../src/theme/ui';
 const STYLE_OPTIONS = ['Casual', 'Formal', 'Streetwear', 'Minimalist', 'Bohemian', 'Sporty', 'Vintage'];
 const COLOR_OPTIONS = ['Black', 'White', 'Navy', 'Grey', 'Beige', 'Brown', 'Red', 'Green', 'Blue'];
 const BODY_TYPES = ['Slim', 'Athletic', 'Regular', 'Plus Size', 'Petite'];
+const PRONOUN_OPTIONS = ['he/him', 'she/her', 'they/them', 'other'];
 
 export default function EditProfile() {
   const router = useRouter();
@@ -32,7 +33,8 @@ export default function EditProfile() {
   // Basic info
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
-  const [pronouns, setPronouns] = useState('');
+  const [pronounsOption, setPronounsOption] = useState('');
+  const [pronounsOther, setPronounsOther] = useState('');
   const [originalUsername, setOriginalUsername] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [bannerImageUrl, setBannerImageUrl] = useState('');
@@ -45,11 +47,17 @@ export default function EditProfile() {
   const initialSnapshotRef = useRef<string>('');
 
   const normalizeArray = (arr: string[]) => [...arr].map(v => v.trim()).filter(Boolean).sort();
+  const resolvePronouns = (option?: string, other?: string) => {
+    const selected = (option ?? pronounsOption).trim();
+    const custom = (other ?? pronounsOther).trim();
+    return selected === 'other' ? custom : selected;
+  };
 
   const buildSnapshot = (overrides?: {
     displayName?: string;
     username?: string;
     pronouns?: string;
+    pronounsOther?: string;
     height?: string;
     bodyType?: string;
     selectedStyles?: string[];
@@ -60,7 +68,7 @@ export default function EditProfile() {
     const snapshot = {
       displayName: (overrides?.displayName ?? displayName).trim(),
       username: (overrides?.username ?? username).trim().toLowerCase(),
-      pronouns: (overrides?.pronouns ?? pronouns).trim(),
+      pronouns: resolvePronouns(overrides?.pronouns, overrides?.pronounsOther),
       height: (overrides?.height ?? height).trim(),
       bodyType: (overrides?.bodyType ?? bodyType).trim(),
       selectedStyles: normalizeArray(overrides?.selectedStyles ?? selectedStyles),
@@ -74,7 +82,7 @@ export default function EditProfile() {
   const hasUnsavedChanges = useMemo(() => {
     if (!initialSnapshotRef.current) return false;
     return buildSnapshot() !== initialSnapshotRef.current;
-  }, [displayName, username, pronouns, height, bodyType, selectedStyles, selectedColors, photoUrl, bannerImageUrl]);
+  }, [displayName, username, pronounsOption, pronounsOther, height, bodyType, selectedStyles, selectedColors, photoUrl, bannerImageUrl]);
   const isBusy = saving || uploadingPhoto || uploadingBanner;
 
   useEffect(() => {
@@ -96,7 +104,10 @@ export default function EditProfile() {
       if (snap.exists()) {
         const data = snap.data();
         const initialUsername = data.username || '';
-        const initialPronouns = data.pronouns || '';
+        const initialPronouns = (data.pronouns || '').toLowerCase();
+        const pronounMatch = PRONOUN_OPTIONS.includes(initialPronouns) && initialPronouns !== 'other';
+        const initialPronounOption = pronounMatch ? initialPronouns : (initialPronouns ? 'other' : '');
+        const initialPronounOther = pronounMatch ? '' : (data.pronouns || '');
         const initialHeight = data.height?.toString() || '';
         const initialBodyType = data.bodyType || '';
         const initialStyles = data.styles || [];
@@ -105,7 +116,8 @@ export default function EditProfile() {
         const initialBannerImageUrl = data.bannerImageUrl || '';
 
         setUsername(initialUsername);
-        setPronouns(initialPronouns);
+        setPronounsOption(initialPronounOption);
+        setPronounsOther(initialPronounOther);
         setOriginalUsername(initialUsername);
         setHeight(initialHeight);
         setBodyType(initialBodyType);
@@ -117,7 +129,8 @@ export default function EditProfile() {
         initialSnapshotRef.current = buildSnapshot({
           displayName: initialDisplayName,
           username: initialUsername,
-          pronouns: initialPronouns,
+          pronouns: initialPronounOption,
+          pronounsOther: initialPronounOther,
           height: initialHeight,
           bodyType: initialBodyType,
           selectedStyles: initialStyles,
@@ -127,7 +140,8 @@ export default function EditProfile() {
         });
       } else {
         setUsername('');
-        setPronouns('');
+        setPronounsOption('');
+        setPronounsOther('');
         setOriginalUsername('');
         setHeight('');
         setBodyType('');
@@ -139,6 +153,7 @@ export default function EditProfile() {
           displayName: initialDisplayName,
           username: '',
           pronouns: '',
+          pronounsOther: '',
           height: '',
           bodyType: '',
           selectedStyles: [],
@@ -179,6 +194,7 @@ export default function EditProfile() {
     try {
       const trimmedDisplayName = displayName.trim();
       const trimmedUsername = username.trim().toLowerCase();
+      const finalPronouns = resolvePronouns();
 
       // Update Firebase Auth display name
       if (trimmedDisplayName !== (user.displayName || '').trim()) {
@@ -199,7 +215,7 @@ export default function EditProfile() {
       // Save everything to Firestore
       await setDoc(doc(db, 'user_profiles', user.uid), {
         username: trimmedUsername,
-        pronouns: pronouns.trim(),
+        pronouns: finalPronouns,
         displayName: trimmedDisplayName,
         photoUrl,
         bannerImageUrl,
@@ -213,7 +229,8 @@ export default function EditProfile() {
       initialSnapshotRef.current = buildSnapshot({
         displayName: trimmedDisplayName,
         username: trimmedUsername,
-        pronouns,
+        pronouns: pronounsOption,
+        pronounsOther,
         height,
         bodyType,
         selectedStyles,
@@ -377,13 +394,34 @@ export default function EditProfile() {
       />
 
       <Text style={[styles.label, { color: theme.text2 }]}>Pronouns</Text>
-      <TextInput
-        style={[styles.input, { backgroundColor: theme.bg2, borderColor: theme.border, color: theme.text }]}
-        value={pronouns}
-        onChangeText={setPronouns}
-        placeholder="e.g. he/him, she/her, they/them"
-        placeholderTextColor="#999"
-      />
+      <View style={styles.chipRow}>
+        {PRONOUN_OPTIONS.map(option => (
+          <TouchableOpacity
+            key={option}
+            style={[
+              styles.chip,
+              { backgroundColor: pronounsOption === option ? theme.tint : theme.bg2, borderColor: theme.border },
+            ]}
+            onPress={() => setPronounsOption(option)}
+          >
+            <Text style={[
+              styles.chipText,
+              { color: pronounsOption === option ? theme.bg : theme.text },
+            ]}>
+              {option}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {pronounsOption === 'other' ? (
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.bg2, borderColor: theme.border, color: theme.text }]}
+          value={pronounsOther}
+          onChangeText={setPronounsOther}
+          placeholder="Enter pronouns"
+          placeholderTextColor="#999"
+        />
+      ) : null}
 
       <Text style={[styles.label, { color: theme.text2 }]}>Height (cm)</Text>
       <TextInput
